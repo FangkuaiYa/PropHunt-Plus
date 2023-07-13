@@ -9,9 +9,9 @@ namespace PropHunt
         static GameObject toggleOption;
         static GameObject numberOption;
 
-        static NumberOption hidingOption;
-        static NumberOption maxMissOption;
-        static ToggleOption infectionOption;
+        public static NumberOption hidingOption;
+        public static NumberOption maxMissOption;
+        public static ToggleOption infectionOption;
 
 
 
@@ -47,7 +47,7 @@ namespace PropHunt
             hidingOption.SuffixType = NumberSuffixes.Seconds;
             hidingOption.Value = PropHuntPlugin.hidingTime;
             hidingOption.transform.position = new Vector3(hidingOption.transform.position.x, hidingOption.transform.position.y - 0.5f, hidingOption.transform.position.z);
-            hidingOption.TitleText.text = "Hiding Time";
+            hidingOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "躲藏时间" : "Hiding Time";
             // Max Miss Option
             maxMissOption = GameObject.Instantiate(numberOption, __instance.AdvancedRolesSettings.transform).GetComponent<NumberOption>();
             maxMissOption.gameObject.SetActive(true);
@@ -57,7 +57,7 @@ namespace PropHunt
             maxMissOption.SuffixType = NumberSuffixes.None;
             maxMissOption.Value = PropHuntPlugin.maxMissedKills;
             maxMissOption.transform.position = new Vector3(maxMissOption.transform.position.x, maxMissOption.transform.position.y, maxMissOption.transform.position.z);
-            maxMissOption.TitleText.text = "Maximum Missed Kills";
+            maxMissOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "最大失误次数" : "Maximum Missed Kills";
             // Infection Option
             infectionOption = GameObject.Instantiate(toggleOption, __instance.AdvancedRolesSettings.transform).GetComponent<ToggleOption>();
             infectionOption.gameObject.SetActive(true);
@@ -65,18 +65,29 @@ namespace PropHunt
             infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y, infectionOption.transform.position.z);
             if ((PropHuntPlugin.infection && !infectionOption.GetBool()) || (!PropHuntPlugin.infection && infectionOption.GetBool()))
                 infectionOption.Toggle();
-            infectionOption.TitleText.text = "Infection Mode";
+            infectionOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "感染模式" : "Infection Mode";
         }
 
 
-        [HarmonyPatch(typeof(GameOptionsData), nameof(GameOptionsData.ToHudString))]
-        [HarmonyPrefix]
-        public static void SyncCustomSettings(GameOptionsData __instance)
+        public static void SyncCustomSettings()
         {
             if (hidingOption && maxMissOption && infectionOption)
             {
-                PropHuntPlugin.RPCHandler.RPCSettingSync(PlayerControl.LocalPlayer, hidingOption.GetFloat(), maxMissOption.GetInt(), infectionOption.GetBool());
+                var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RPC.SettingSync, Hazel.SendOption.Reliable);
+                writer.Write(PlayerControl.LocalPlayer.PlayerId);
+                writer.Write(hidingOption.GetInt());
+                writer.Write(maxMissOption.GetInt());
+                writer.Write(infectionOption.GetBool());
+                AmongUsClient.Instance.FinishRpcImmediately(writer);
+                PropHuntPlugin.RPCHandler.RPCSettingSync(PlayerControl.LocalPlayer, hidingOption.GetInt(), maxMissOption.GetInt(), infectionOption.GetBool());
             }
+        }
+        [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
+        [HarmonyPostfix]
+        public static void HudStringPatch(ref string __result)
+        {
+            SyncCustomSettings();
+            __result += $"\nMod Options:\nHiding Time: {PropHuntPlugin.hidingTime}s\nMaximum Missed Kills: {PropHuntPlugin.maxMissedKills}\nInfection Mode:{(PropHuntPlugin.infection ? "On" : "Off")}";
         }
     }
 }
