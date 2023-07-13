@@ -1,8 +1,8 @@
-﻿[![Made With Reactor](./Images/madewithreactor.png)](https://github.com/NuclearPowered/Reactor)
+﻿
 
 ![Prop Hunt Logo](./Images/prophuntlogo.png)
 
-```Compatible with 2022.10.25s ```
+```Compatible with 2023.7.11s ```
 # Prop Hunt
 
 A mod for [Among Us](https://store.steampowered.com/app/945360/Among_Us/) which adds a completely new gamemode, Prop Hunt!
