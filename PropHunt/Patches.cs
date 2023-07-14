@@ -4,7 +4,6 @@ using AmongUs.Data;
 using AmongUs.GameOptions;
 using HarmonyLib;
 using System;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -61,15 +60,15 @@ namespace PropHunt
                 {
                     player.transform.localScale = closestConsole.transform.lossyScale;
                     player.GetComponent<SpriteRenderer>().sprite = closestConsole.GetComponent<SpriteRenderer>().sprite;
-                    for (int i = 0; i < ShipStatus.Instance.AllConsoles.Length; i++)
+                    foreach(var task in ShipStatus.Instance.AllConsoles)
                     {
-                        if (ShipStatus.Instance.AllConsoles[i] == closestConsole.GetComponent<Console>())
+                        if(task== closestConsole.GetComponent<Console>())
                         {
-                            PropHuntPlugin.Logger.LogInfo("Task of index " + i + " being sent out");
+                            PropHuntPlugin.Logger.LogInfo("Task " + task.ToString() + " being sent out");
                             var writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)RPC.PropSync, Hazel.SendOption.Reliable);
                             writer.Write(player.PlayerId);
-                            writer.Write(i + "");
-                            PropHuntPlugin.RPCHandler.RPCPropSync(player, i + "");
+                            writer.Write(task + "");
+                            PropHuntPlugin.RPCHandler.RPCPropSync(player, task + "");
                         }
                     }
                 }
@@ -241,7 +240,7 @@ namespace PropHunt
                 }
                 if (PropHuntPlugin.missedKills >= PropHuntPlugin.maxMissedKills)
                 {
-                    PlayerControl.LocalPlayer.CmdCheckMurder(PlayerControl.LocalPlayer);
+                    PlayerControl.LocalPlayer.RpcMurderPlayer(PlayerControl.LocalPlayer);
                     PropHuntPlugin.missedKills = 0;
                 }
                 GameObject closestProp = PropHuntPlugin.Utility.FindClosestConsole(PlayerControl.LocalPlayer.gameObject, GameOptionsData.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)]);
@@ -344,10 +343,10 @@ namespace PropHunt
         {
             PropHuntPlugin.Logger.LogInfo("Game Started!");
             var lp = PlayerControl.LocalPlayer;
-            if (!lp.Data.Role.IsImpostor) return;
+            
             int sec = PropHuntPlugin.hidingTime;
 
-            lp.moveable = false;
+            if (!lp.Data.Role.IsImpostor) lp.moveable = false;
             
             for (int s = sec; s >= 0; s--)
             {
@@ -411,10 +410,10 @@ namespace PropHunt
         }
 
 
-        //commands
+        // Commands
         [HarmonyPatch(typeof(ChatController),nameof(ChatController.AddChat))]
         [HarmonyPostfix]
-        public static async void ChatCommandPatch(ChatController __instance, [HarmonyArgument(0)] PlayerControl sourcePlayer, [HarmonyArgument(1)] string chatText)
+        public static void ChatCommandPatch(ChatController __instance, [HarmonyArgument(0)] PlayerControl sourcePlayer, [HarmonyArgument(1)] string chatText)
         {
             IsCommand = false;
             if (!chatText.StartsWith('/')) return;

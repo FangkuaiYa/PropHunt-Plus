@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Hazel;
+using System.Data;
+using System.Linq;
 using static PropHunt.PropHuntPlugin;
 
 namespace PropHunt
@@ -26,14 +23,7 @@ namespace PropHunt
                     var id = reader.ReadByte();
                     PlayerControl player = null;
                     var idx = reader.ReadString();
-                    foreach(var pc in PlayerControl.AllPlayerControls)
-                    {
-                        if (pc.PlayerId == id)
-                        {
-                            player = pc;
-                            break;
-                        }
-                    }
+                    player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == id).FirstOrDefault();
                     RPCHandler.RPCPropSync(player, idx);
                     break;
                 case RPC.SettingSync:
@@ -42,14 +32,7 @@ namespace PropHunt
                     var hidingTime = reader.ReadInt32();
                     var missedKills = reader.ReadInt32();
                     var infection = reader.ReadBoolean();
-                    foreach (var pc in PlayerControl.AllPlayerControls)
-                    {
-                        if (pc.PlayerId == pid)
-                        {
-                            p = pc;
-                            break;
-                        }
-                    }
+                    p = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == pid).FirstOrDefault();
                     RPCHandler.RPCSettingSync(p, hidingTime, missedKills, infection);
                     break;
             }

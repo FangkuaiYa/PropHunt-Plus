@@ -63,7 +63,7 @@ namespace PropHunt
             infectionOption = GameObject.Instantiate(toggleOption, __instance.AdvancedRolesSettings.transform).GetComponent<ToggleOption>();
             infectionOption.gameObject.SetActive(true);
             infectionOption.Title = StringNames.NoneLabel;
-            infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y - 0.5f, infectionOption.transform.position.z);
+            infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y - 0.25f, infectionOption.transform.position.z);
             if ((PropHuntPlugin.infection && !infectionOption.GetBool()) || (!PropHuntPlugin.infection && infectionOption.GetBool()))
                 infectionOption.Toggle();
             infectionOption.TitleText.text = GetString(StringKey.Infection);
@@ -89,6 +89,13 @@ namespace PropHunt
         {
             SyncCustomSettings();
             __result += $"\n{GetString(StringKey.HidingTime)}: {PropHuntPlugin.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {PropHuntPlugin.maxMissedKills}\n{GetString(StringKey.Infection)}: {(PropHuntPlugin.infection ? "On" : "Off")}";
+        }
+        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnPlayerJoined))]
+        [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.RpcSyncSettings))]
+        [HarmonyPostfix]
+        public static void SyncSetting()
+        {
+            SyncCustomSettings();
         }
     }
 }

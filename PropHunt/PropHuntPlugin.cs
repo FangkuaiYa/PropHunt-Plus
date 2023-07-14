@@ -58,7 +58,7 @@ public partial class PropHuntPlugin : BasePlugin
         public static void RPCPropSync(PlayerControl player, string propIndex)
         {
             GameObject prop = ShipStatus.Instance.AllConsoles[int.Parse(propIndex)].gameObject;
-            Logger.LogInfo($"{player.Data.PlayerName} changed their sprite to: {prop.name}");
+            Logger.LogInfo($"{player.Data.PlayerName} changed sprite to: {prop.name}");
             player.GetComponent<SpriteRenderer>().sprite = prop.GetComponent<SpriteRenderer>().sprite;
             player.transform.localScale = prop.transform.lossyScale;
             player.Visible = false;
@@ -100,27 +100,6 @@ public partial class PropHuntPlugin : BasePlugin
                 }
             }
             return bestCollider.gameObject;
-        }
-
-        public static IEnumerator KillConsoleAnimation()
-        {
-            if (Constants.ShouldPlaySfx())
-            {
-                SoundManager.Instance.PlaySound(ShipStatus.Instance.SabotageSound, false, 0.8f);
-                HudManager.Instance.FullScreen.color = new Color(1f, 0f, 0f, 0.372549027f);
-                HudManager.Instance.FullScreen.gameObject.SetActive(true);
-                yield return new WaitForSeconds(0.5f);
-                HudManager.Instance.FullScreen.gameObject.SetActive(false);
-            }
-            yield break;
-        }
-
-        public static IEnumerator IntroCutsceneHidePatch(IntroCutscene __instance)
-        {
-            PlayerControl.LocalPlayer.moveable = false;
-            yield return new WaitForSeconds(PropHuntPlugin.hidingTime);
-            PlayerControl.LocalPlayer.moveable = true;
-            Object.Destroy(__instance.gameObject);
         }
     }
 }
