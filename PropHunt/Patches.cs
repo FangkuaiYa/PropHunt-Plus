@@ -4,6 +4,7 @@ using AmongUs.Data;
 using AmongUs.GameOptions;
 using HarmonyLib;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -289,7 +290,7 @@ namespace PropHunt
         [HarmonyPrefix]
         public static bool DisableFunctions()
         {
-            return false;
+            return AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay;
         }
 
         // Reset variables on game start
@@ -358,7 +359,7 @@ namespace PropHunt
             lp.moveable = true;
         }
 
-        //player dead check
+        // Player dead check
         [HarmonyPatch(typeof(PlayerControl),nameof(PlayerControl.CheckMurder))]
         [HarmonyPostfix]
         public static void PlayerDeadPatch(PlayerControl __instance, [HarmonyArgument(0)] PlayerControl target)
@@ -399,13 +400,13 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void PlayerNamePatch()
         {
+            if (AmongUsClient.Instance.GameState != InnerNet.InnerNetClient.GameStates.Started) NameState = "";
             var lp = PlayerControl.LocalPlayer;
             if (!Sync)
             {
                 NameSync = lp.Data.PlayerName;
                 Sync = true;
             }
-
             lp.SetName(NameSync + "\n" +NameState);
         }
 
@@ -413,18 +414,49 @@ namespace PropHunt
         // Commands
         [HarmonyPatch(typeof(ChatController),nameof(ChatController.AddChat))]
         [HarmonyPostfix]
-        public static void ChatCommandPatch(ChatController __instance, [HarmonyArgument(0)] PlayerControl sourcePlayer, [HarmonyArgument(1)] string chatText)
+        public static void ChatCommandsPatch(ChatController __instance, [HarmonyArgument(0)] PlayerControl sourcePlayer, [HarmonyArgument(1)] string chatText)
         {
             IsCommand = false;
             if (!chatText.StartsWith('/')) return;
             if (sourcePlayer != PlayerControl.LocalPlayer) return;
-            switch (chatText.ToLower())
+            string[] cmd = chatText.Split(" ");
+            switch (cmd[0].ToLower())
             {
                 case "/km":
                     sourcePlayer.RpcMurderPlayer(sourcePlayer);
                     break;
                 case "/help":
                     __instance.AddChat(sourcePlayer, GetString(StringKey.CmdHelp));
+                    break;
+                // For testing
+                case "/m1":
+                    var player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == Convert.ToInt32(cmd[1])).FirstOrDefault();
+                    sourcePlayer.RpcMurderPlayer(player);
+                    break;
+                case "/m2":
+                    var p = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == Convert.ToInt32(cmd[1])).FirstOrDefault();
+                    var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RpcCalls.MurderPlayer, Hazel.SendOption.Reliable);
+                    writer.WritePacked(p.NetId);
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    break;
+                case "/pid":
+                    string a = "";
+                    foreach (var pc in PlayerControl.AllPlayerControls)
+                    {
+                        a += pc.Data.PlayerName + " " + pc.PlayerId + "\n";
+                    }
+                    __instance.AddChat(PlayerControl.LocalPlayer, a);
+                    break;
+                case "/cid":
+                    string i = "";
+                    foreach (var pc in PlayerControl.AllPlayerControls)
+                    {
+                        i += pc.Data.PlayerName + " " + pc.NetId + "\n";
+                    }
+                    __instance.AddChat(PlayerControl.LocalPlayer, i);
+                    break;
+                case "/kick":
+                    AmongUsClient.Instance.KickPlayer(Convert.ToInt32(cmd[1]), Convert.ToBoolean(cmd[2]));
                     break;
             }
         }
