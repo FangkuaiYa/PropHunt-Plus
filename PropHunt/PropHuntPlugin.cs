@@ -1,5 +1,6 @@
 ﻿// Core Script of PropHuntPlugin
 // Copyright (C) 2022  ugackMiner
+global using static PropHunt.Language;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -17,9 +18,10 @@ public partial class PropHuntPlugin : BasePlugin
 {
     // Backend Variables
     public Harmony Harmony { get; } = new("com.jiege.prophuntre");
-    public ConfigEntry<int> HidingTime { get; private set; }
-    public ConfigEntry<int> MaxMissedKills { get; private set; }
-    public ConfigEntry<bool> Infection { get; private set; }
+    public ConfigEntry<int> HidingTime { get; set; }
+    public ConfigEntry<int> MaxMissedKills { get; set; }
+    public ConfigEntry<bool> Infection { get; set; }
+    public ConfigEntry<bool> Debug { get; set; }
     internal static ManualLogSource Logger;
 
     // Gameplay Variables
@@ -38,12 +40,14 @@ public partial class PropHuntPlugin : BasePlugin
         HidingTime = Config.Bind("Prop Hunt", "Hiding Time", 30);
         MaxMissedKills = Config.Bind("Prop Hunt", "Max Misses", 3);
         Infection = Config.Bind("Prop Hunt", "Infection", true);
+        Debug = Config.Bind("Prop Hunt", "Debug", false);
 
         Instance = this;
 
         Harmony.PatchAll(typeof(CustomRoleSettings));
         Harmony.PatchAll(typeof(Patches));
         Harmony.PatchAll(typeof(RPCPatch));
+        Harmony.PatchAll(typeof(Language));
         Logger.LogInfo("Loaded");
     }
 

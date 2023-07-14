@@ -24,6 +24,7 @@ namespace PropHunt
             {
                 textObject = GameObject.Instantiate(GameObject.Find("Role Name").gameObject);
                 textObject.GetComponent<TMPro.TextMeshPro>().text = "Prop Hunt";
+                textObject.GetComponent<TMPro.TextMeshPro>().color = Palette.Black;
                 toggleOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<ToggleOption>().gameObject);
                 numberOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<NumberOption>().gameObject);
                 textObject.SetActive(false);
@@ -47,7 +48,7 @@ namespace PropHunt
             hidingOption.SuffixType = NumberSuffixes.Seconds;
             hidingOption.Value = PropHuntPlugin.hidingTime;
             hidingOption.transform.position = new Vector3(hidingOption.transform.position.x, hidingOption.transform.position.y - 0.5f, hidingOption.transform.position.z);
-            hidingOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "躲藏时间" : "Hiding Time";
+            hidingOption.TitleText.text = GetString(StringKey.HidingTime);
             // Max Miss Option
             maxMissOption = GameObject.Instantiate(numberOption, __instance.AdvancedRolesSettings.transform).GetComponent<NumberOption>();
             maxMissOption.gameObject.SetActive(true);
@@ -57,15 +58,15 @@ namespace PropHunt
             maxMissOption.SuffixType = NumberSuffixes.None;
             maxMissOption.Value = PropHuntPlugin.maxMissedKills;
             maxMissOption.transform.position = new Vector3(maxMissOption.transform.position.x, maxMissOption.transform.position.y, maxMissOption.transform.position.z);
-            maxMissOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "最大失误次数" : "Maximum Missed Kills";
+            maxMissOption.TitleText.text = GetString(StringKey.MaxMisKill);
             // Infection Option
             infectionOption = GameObject.Instantiate(toggleOption, __instance.AdvancedRolesSettings.transform).GetComponent<ToggleOption>();
             infectionOption.gameObject.SetActive(true);
             infectionOption.Title = StringNames.NoneLabel;
-            infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y, infectionOption.transform.position.z);
+            infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y - 0.5f, infectionOption.transform.position.z);
             if ((PropHuntPlugin.infection && !infectionOption.GetBool()) || (!PropHuntPlugin.infection && infectionOption.GetBool()))
                 infectionOption.Toggle();
-            infectionOption.TitleText.text = TranslationController.Instance.currentLanguage.languageID == SupportedLangs.SChinese ? "感染模式" : "Infection Mode";
+            infectionOption.TitleText.text = GetString(StringKey.Infection);
         }
 
 
@@ -87,7 +88,7 @@ namespace PropHunt
         public static void HudStringPatch(ref string __result)
         {
             SyncCustomSettings();
-            __result += $"\nMod Options:\nHiding Time: {PropHuntPlugin.hidingTime}s\nMaximum Missed Kills: {PropHuntPlugin.maxMissedKills}\nInfection Mode:{(PropHuntPlugin.infection ? "On" : "Off")}";
+            __result += $"\n{GetString(StringKey.HidingTime)}: {PropHuntPlugin.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {PropHuntPlugin.maxMissedKills}\n{GetString(StringKey.Infection)}: {(PropHuntPlugin.infection ? "On" : "Off")}";
         }
     }
 }
