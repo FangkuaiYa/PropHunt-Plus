@@ -1,5 +1,5 @@
 ﻿
-
+![Made without reactor](./Images/madewithoutreactor.png)
 ![Prop Hunt Logo](./Images/prophuntlogo.png)
 
 ```Compatible with 2023.7.11s ```
@@ -39,6 +39,3 @@ Although the mod *may* work on official servers, it is highly discouraged to do 
 Prop Hunt is fully compatible with [Submerged](https://github.com/SubmergedAmongUs/Submerged)!
 
 However, Prop Hunt will **not** work with many other mods, such as role mods and any other mod which modifies the gameplay loop.
-
-## Contributing
-Contributions are welcome! Submit a [pull request](https://github.com/ugackMiner53/PropHunt/pulls) and give a brief description and the code will be reviewed as soon as possible.

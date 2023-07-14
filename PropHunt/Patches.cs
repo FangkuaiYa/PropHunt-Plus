@@ -52,6 +52,7 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void PlayerInputControlPatch(KeyboardJoystick __instance)
         {
+            if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
             PlayerControl player = PlayerControl.LocalPlayer;
             if (Input.GetKeyDown(KeyCode.R) && !player.Data.Role.IsImpostor)
             {
@@ -222,9 +223,10 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void DisableButtonsPatch(HudManager __instance)
         {
-            __instance.SabotageButton.gameObject.SetActive(false);
-            __instance.ReportButton.SetActive(false);
-            __instance.ImpostorVentButton.gameObject.SetActive(false);
+            bool active = AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay;
+            __instance.SabotageButton.gameObject.SetActive(active);
+            __instance.ReportButton.SetActive(active);
+            __instance.ImpostorVentButton.gameObject.SetActive(active);
         }
 
         // Penalize the impostor if there is no prop killed
@@ -270,8 +272,6 @@ namespace PropHunt
             __result = Mathf.Clamp(numImpostors, 1, num);
             return false;
         }
-
-
 
         // Change the minimum amount of players to start a game
         [HarmonyPatch(typeof(GameStartManager), nameof(GameStartManager.Start))]
@@ -410,7 +410,6 @@ namespace PropHunt
             lp.SetName(NameSync + "\n" +NameState);
         }
 
-
         // Commands
         [HarmonyPatch(typeof(ChatController),nameof(ChatController.AddChat))]
         [HarmonyPostfix]
@@ -443,9 +442,9 @@ namespace PropHunt
                     string a = "";
                     foreach (var pc in PlayerControl.AllPlayerControls)
                     {
-                        a += pc.Data.PlayerName + " " + pc.PlayerId + "\n";
+                        a += pc.Data.PlayerName + " " + pc.PlayerId + "\r\n";
                     }
-                    __instance.AddChat(PlayerControl.LocalPlayer, a);
+                    PropHuntPlugin.Logger.LogMessage(a);
                     break;
                 case "/cid":
                     string i = "";
@@ -453,7 +452,7 @@ namespace PropHunt
                     {
                         i += pc.Data.PlayerName + " " + pc.NetId + "\n";
                     }
-                    __instance.AddChat(PlayerControl.LocalPlayer, i);
+                    PropHuntPlugin.Logger.LogMessage(i);
                     break;
                 case "/kick":
                     AmongUsClient.Instance.KickPlayer(Convert.ToInt32(cmd[1]), Convert.ToBoolean(cmd[2]));
