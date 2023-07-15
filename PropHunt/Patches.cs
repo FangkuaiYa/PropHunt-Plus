@@ -14,7 +14,7 @@ namespace PropHunt
     public class Patches
     {
         public static string NameSync = "";
-        public static string NameState = "\n";
+        public static string NameState = "";
         public static bool Sync = false;
         public static bool IsCommand = false;
 
@@ -60,17 +60,20 @@ namespace PropHunt
                 GameObject closestConsole = PropHuntPlugin.Utility.FindClosestConsole(player.gameObject, 3);
                 if (closestConsole != null)
                 {
+                    player.Visible = false;
                     player.transform.localScale = closestConsole.transform.lossyScale;
                     player.GetComponent<SpriteRenderer>().sprite = closestConsole.GetComponent<SpriteRenderer>().sprite;
+                    int t = 0;
                     foreach(var task in ShipStatus.Instance.AllConsoles)
                     {
-                        if(task== closestConsole.GetComponent<Console>())
+                        t++;
+                        if(task == closestConsole.GetComponent<Console>())
                         {
                             PropHuntPlugin.Logger.LogInfo("Task " + task.ToString() + " being sent out");
                             var writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)RPC.PropSync, Hazel.SendOption.Reliable);
                             writer.Write(player.PlayerId);
-                            writer.Write(task + "");
-                            PropHuntPlugin.RPCHandler.RPCPropSync(player, task + "");
+                            writer.Write(t);
+                            PropHuntPlugin.RPCHandler.RPCPropSync(player, t);
                         }
                     }
                 }
@@ -96,10 +99,12 @@ namespace PropHunt
         }
 
         // Make prop impostor on death
+
         [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.Die))]
         [HarmonyPostfix]
         public static void MakePropImpostorPatch(PlayerControl __instance)
         {
+            if (!__instance.Data.IsDead) return;
             if (!__instance.Data.Role.IsImpostor && PropHuntPlugin.infection)
             {
                 foreach (GameData.TaskInfo task in __instance.Data.Tasks)
@@ -112,6 +117,7 @@ namespace PropHunt
                 DestroyableSingleton<RoleManager>.Instance.SetRole(__instance, RoleTypes.Impostor);
                 __instance.transform.localScale = new Vector3(0.7f, 0.7f, 1);
                 __instance.Visible = true;
+                GameObject.Destroy(__instance.GetComponent<SpriteRenderer>());
                 foreach (SpriteRenderer rend in __instance.GetComponentsInChildren<SpriteRenderer>())
                 {
                     rend.sortingOrder += 5;
@@ -125,13 +131,10 @@ namespace PropHunt
         public static bool CheckEndPatch(LogicGameFlowNormal __instance)
         {
             if (PropHuntPlugin.Instance.Debug.Value) return false;
-            if (!GameData.Instance || TutorialManager.InstanceExists)
-            {
-                return false;
-            }
-            int crew = 0;
-            int aliveImpostors = 0;
-            int impostors = 0;
+            if (!GameData.Instance || TutorialManager.InstanceExists) return false;
+
+            int crew = 0, impostors = 0, aliveImpostors = 0;
+            
             foreach(var pi in GameData.Instance.AllPlayers)
             {
                 if (pi.Disconnected) continue;
@@ -203,7 +206,7 @@ namespace PropHunt
             }
             if (aliveImpostors <= 0)
             {
-                GameManager.Instance.RpcEndGame(GameOverReason.HumansByVote, !DataManager.Player.Ads.HasPurchasedAdRemoval);
+                GameManager.Instance.RpcEndGame(GameOverReason.HumansByVote, false);
                 return false;
             }
             return false;
@@ -215,6 +218,7 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void KillButtonHighlightPatch(ActionButton __instance)
         {
+            if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
             __instance.SetEnabled();
         }
 
@@ -223,10 +227,10 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void DisableButtonsPatch(HudManager __instance)
         {
-            bool active = AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay;
-            __instance.SabotageButton.gameObject.SetActive(active);
-            __instance.ReportButton.SetActive(active);
-            __instance.ImpostorVentButton.gameObject.SetActive(active);
+            if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
+            __instance.SabotageButton.gameObject.SetActive(false);
+            __instance.ReportButton.SetActive(false);
+            __instance.ImpostorVentButton.gameObject.SetActive(false);
         }
 
         // Penalize the impostor if there is no prop killed
@@ -239,11 +243,12 @@ namespace PropHunt
                 PropHuntPlugin.missedKills++;
                 if (AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay)
                 {
-                    NameState = string.Format($"<color=#ff0000>{GetString(StringKey.RemainAttempt)}</color>", PropHuntPlugin.maxMissedKills - PropHuntPlugin.missedKills);
+                    NameState = "\n" + string.Format($"<color=#ff0000>{GetString(StringKey.RemainAttempt)}</color>", PropHuntPlugin.maxMissedKills - PropHuntPlugin.missedKills);
                 }
                 if (PropHuntPlugin.missedKills >= PropHuntPlugin.maxMissedKills)
                 {
                     PlayerControl.LocalPlayer.RpcMurderPlayer(PlayerControl.LocalPlayer);
+                    NameState = "";
                     PropHuntPlugin.missedKills = 0;
                 }
                 GameObject closestProp = PropHuntPlugin.Utility.FindClosestConsole(PlayerControl.LocalPlayer.gameObject, GameOptionsData.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)]);
@@ -311,6 +316,7 @@ namespace PropHunt
             hud.SabotageButton.gameObject.SetActiveRecursively(false);
             hud.ReportButton.gameObject.SetActiveRecursively(false);
             hud.Chat.SetVisible(true);
+            NameState = "";
             PropHuntPlugin.Logger.LogInfo(PropHuntPlugin.hidingTime + " -- " + PropHuntPlugin.maxMissedKills);
         }
 
@@ -346,12 +352,11 @@ namespace PropHunt
             var lp = PlayerControl.LocalPlayer;
             
             int sec = PropHuntPlugin.hidingTime;
-
-            if (!lp.Data.Role.IsImpostor) lp.moveable = false;
+            lp.moveable = !lp.Data.Role.IsImpostor;
             
             for (int s = sec; s >= 0; s--)
             {
-                NameState = string.Format(GetString(StringKey.HidingTimeLeft), s);
+                NameState = "\n" + string.Format(GetString(StringKey.HidingTimeLeft), s);
                 PropHuntPlugin.Logger.LogInfo(s);
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
@@ -377,25 +382,6 @@ namespace PropHunt
             }
         }
         
-        [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.CheckMurder))]
-        [HarmonyPostfix]
-        public static void PlayerInfectionPatch(PlayerControl __instance, [HarmonyArgument(0)] PlayerControl target)
-        {
-            if (!AmongUsClient.Instance.IsGameStarted) return;
-            var killer = __instance;
-            if (!target.Data.IsDead) return;
-
-            if (target.GetComponent<SpriteRenderer>().sprite != null && !target.Data.Role.IsImpostor)
-            {
-                target.Visible = false;
-            }
-            if (target.Data.IsDead)
-            {
-                target.Visible = true;
-                GameObject.Destroy(target.GetComponent<SpriteRenderer>());
-            }
-        }
-
         [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.FixedUpdate))]
         [HarmonyPostfix]
         public static void PlayerNamePatch()
@@ -407,7 +393,7 @@ namespace PropHunt
                 NameSync = lp.Data.PlayerName;
                 Sync = true;
             }
-            lp.SetName(NameSync + "\n" +NameState);
+            lp.SetName(NameSync + NameState);
         }
 
         // Commands
@@ -457,7 +443,27 @@ namespace PropHunt
                 case "/kick":
                     AmongUsClient.Instance.KickPlayer(Convert.ToInt32(cmd[1]), Convert.ToBoolean(cmd[2]));
                     break;
+                case "/role":
+                    if (cmd[1] == "0")
+                    {
+                        DestroyableSingleton<RoleManager>.Instance.SetRole(PlayerControl.LocalPlayer, RoleTypes.Crewmate);
+                    }
+                    else
+                    {
+                        DestroyableSingleton<RoleManager>.Instance.SetRole(PlayerControl.LocalPlayer, RoleTypes.Impostor);
+                    }
+                    break;
             }
+        }
+
+        [HarmonyPatch(typeof(EmergencyMinigame),nameof(EmergencyMinigame.Update))]
+        [HarmonyPostfix]
+        public static void EmergencyButtonPatch(EmergencyMinigame __instance)
+        {
+            __instance.StatusText.text = GetString(StringKey.MeetingDisabled);
+            __instance.NumberText.text = "";
+            __instance.OpenLid.gameObject.SetActive(false);
+            __instance.ClosedLid.gameObject.SetActive(true);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace PropHunt
             if (toggleOption == null && numberOption == null)
             {
                 textObject = GameObject.Instantiate(GameObject.Find("Role Name").gameObject);
-                textObject.GetComponent<TMPro.TextMeshPro>().text = "Prop Hunt";
+                textObject.GetComponent<TMPro.TextMeshPro>().text = GetString(StringKey.PropHunt);
                 textObject.GetComponent<TMPro.TextMeshPro>().color = Palette.Black;
                 toggleOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<ToggleOption>().gameObject);
                 numberOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<NumberOption>().gameObject);
@@ -87,13 +87,13 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void HudStringPatch(ref string __result)
         {
-            SyncCustomSettings();
             __result += $"\n{GetString(StringKey.HidingTime)}: {PropHuntPlugin.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {PropHuntPlugin.maxMissedKills}\n{GetString(StringKey.Infection)}: {(PropHuntPlugin.infection ? "On" : "Off")}";
         }
-        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnPlayerJoined))]
+        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnGameJoined))]
         [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.RpcSyncSettings))]
+        [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
         [HarmonyPostfix]
-        public static void SyncSetting()
+        public static void SyncSettingsPatch()
         {
             SyncCustomSettings();
         }

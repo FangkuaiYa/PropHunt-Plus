@@ -25,9 +25,33 @@ public partial class PropHuntPlugin : BasePlugin
     internal static ManualLogSource Logger;
 
     // Gameplay Variables
-    public static int hidingTime = 30;
-    public static int maxMissedKills = 3;
-    public static bool infection = true;
+    public static int hidingTime
+    {
+        get => Instance.HidingTime.Value;
+        set 
+        {
+            Instance.HidingTime.Value = value;
+            Instance.Config.Save();
+        }
+    }
+    public static int maxMissedKills
+    {
+        get => Instance.MaxMissedKills.Value;
+        set
+        {
+            Instance.MaxMissedKills.Value = value;
+            Instance.Config.Save();
+        }
+    }
+    public static bool infection
+    {
+        get => Instance.Infection.Value;
+        set
+        {
+            Instance.Infection.Value = value;
+            Instance.Config.Save();
+        }
+    }
 
     public static int missedKills = 0;
 
@@ -55,9 +79,9 @@ public partial class PropHuntPlugin : BasePlugin
 
     public static class RPCHandler
     {
-        public static void RPCPropSync(PlayerControl player, string propIndex)
+        public static void RPCPropSync(PlayerControl player, int propIndex)
         {
-            GameObject prop = ShipStatus.Instance.AllConsoles[int.Parse(propIndex)].gameObject;
+            GameObject prop = ShipStatus.Instance.AllConsoles[propIndex].gameObject;
             Logger.LogInfo($"{player.Data.PlayerName} changed sprite to: {prop.name}");
             player.GetComponent<SpriteRenderer>().sprite = prop.GetComponent<SpriteRenderer>().sprite;
             player.transform.localScale = prop.transform.lossyScale;

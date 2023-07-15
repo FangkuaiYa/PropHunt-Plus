@@ -20,14 +20,14 @@ namespace PropHunt
             switch (rpc)
             {
                 case RPC.PropSync:
-                    var id = reader.ReadByte();
+                    byte id = reader.ReadByte();
                     PlayerControl player = null;
-                    var idx = reader.ReadString();
+                    int idx = reader.ReadInt32();
                     player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == id).FirstOrDefault();
                     RPCHandler.RPCPropSync(player, idx);
                     break;
                 case RPC.SettingSync:
-                    var pid = reader.ReadByte();
+                    byte pid = reader.ReadByte();
                     PlayerControl p = null;
                     var hidingTime = reader.ReadInt32();
                     var missedKills = reader.ReadInt32();

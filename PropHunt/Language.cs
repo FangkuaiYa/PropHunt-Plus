@@ -5,6 +5,7 @@ namespace PropHunt
 {
     public enum StringKey
     {
+        PropHunt,
         HidingTime,
         MaxMisKill,
         Infection,
@@ -20,6 +21,7 @@ namespace PropHunt
         SeekerDead,
         PropDead,
         PropInfected,
+        MeetingDisabled,
     }
     public static class Language
     {
@@ -59,6 +61,7 @@ namespace PropHunt
                 case SupportedLangs.English:
                     return new()
                     {
+                        [StringKey.PropHunt] = "Prop Hunt",
                         [StringKey.HidingTime] = "Hiding Time",
                         [StringKey.MaxMisKill] = "Maximum Missed Kills",
                         [StringKey.Infection] = "Infection Mode",
@@ -74,17 +77,19 @@ namespace PropHunt
                         [StringKey.SeekerDead]="Seeker {0} was dead!\n{1} Seeker(s) remaining, {2} Prop(s) remaining.",
                         [StringKey.PropDead]= "Prop {0} was dead!\n{1} Seeker(s) remaining, {2} Prop(s) remaining.",
                         [StringKey.PropInfected] = "Prop {0} was infected into seeker!\n{1} Seeker(s) remaining, {2} Prop(s) remaining.",
+                        [StringKey.MeetingDisabled] = "Meeting was disabled when playing Prop Hunt mode",
                     };
                 case SupportedLangs.SChinese:
                     return new()
                     {
+                        [StringKey.PropHunt] = "道具躲猫猫",
                         [StringKey.HidingTime] = "躲藏时间",
                         [StringKey.MaxMisKill] = "最多击杀失误次数",
                         [StringKey.Infection] = "道具死后变为内鬼",
                         [StringKey.Ping] = "延迟： {0} 毫秒",
                         [StringKey.RemainAttempt] = "剩余击杀次数：{0}",
                         [StringKey.Seeker] = "寻找者",
-                        [StringKey.SeekerDescription] = "寻找并击杀道具们\n你在 {0} 秒后才能行动",
+                        [StringKey.SeekerDescription] = "找出道具们\n你在 {0} 秒后才能行动",
                         [StringKey.Prop] = "道具",
                         [StringKey.PropDescription] = "变成道具，戏弄寻找者",
                         [StringKey.HidingTimeLeft] = "剩余 {0} 秒躲藏",
@@ -93,6 +98,7 @@ namespace PropHunt
                         [StringKey.SeekerDead] = "寻找者 {0} 已死亡！\n剩余 {1} 位寻找者， 剩余 {2} 个道具。",
                         [StringKey.PropDead] = "道具 {0} 已死亡！\n剩余 {1} 位寻找者， 剩余 {2} 个道具。",
                         [StringKey.PropInfected] = "道具 {0} 已被感染为寻找者！\n剩余 {1} 位寻找者， 剩余 {2} 个道具。",
+                        [StringKey.MeetingDisabled] = "在道具躲猫猫模式下，您无法开启会议",
                     };
 
 
