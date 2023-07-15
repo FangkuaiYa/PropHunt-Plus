@@ -112,7 +112,7 @@ public partial class PropHuntPlugin : BasePlugin
             try
             {
                 Collider2D bestCollider = null;
-                float bestDist = float.MaxValue;
+                float bestDist = 9999;
                 foreach (Collider2D collider in Physics2D.OverlapCircleAll(origin.transform.position, radius))
                 {
                     if (collider.GetComponent<Console>() != null)

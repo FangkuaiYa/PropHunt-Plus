@@ -57,7 +57,7 @@ namespace PropHunt
             if (Input.GetKeyDown(KeyCode.R) && !player.Data.Role.IsImpostor)
             {
                 PropHuntPlugin.Logger.LogInfo("Key pressed");
-                GameObject closestConsole = PropHuntPlugin.Utility.FindClosestConsole(player.gameObject, 3);
+                GameObject closestConsole = PropHuntPlugin.Utility.FindClosestConsole(player.gameObject, GameOptionsData.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)]);
                 if (closestConsole != null)
                 {
                     player.Visible = false;
