@@ -156,7 +156,7 @@ namespace PropHunt
                 if (DestroyableSingleton<TutorialManager>.InstanceExists)
                 {
                     DestroyableSingleton<HudManager>.Instance.ShowPopUp(DestroyableSingleton<TranslationController>.Instance.GetString(StringNames.GameOverImpostorKills, System.Array.Empty<Il2CppSystem.Object>()));
-                    foreach (var pc in PlayerControl.AllPlayerControls) pc.Revive(); // =ShipStatus.ReviveEveryone
+                    foreach (var pc in PlayerControl.AllPlayerControls) pc.Revive(); // =ShipStatus.ReviveEveryone()
                     return false;
                 }
                 if (GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.Normal)
@@ -374,10 +374,12 @@ namespace PropHunt
             if (!AmongUsClient.Instance.AmHost) return;
             if (killer == target && target.Data.Role.IsImpostor)
             {
+                PropHuntPlugin.Logger.LogInfo("Imp ded");
                 DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(StringKey.SeekerDead));
             }
             else
             {
+                PropHuntPlugin.Logger.LogInfo("Crew ded/infcted");
                 DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(PropHuntPlugin.infection ? StringKey.PropInfected: StringKey.PropDead));
             }
         }
@@ -460,10 +462,29 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void EmergencyButtonPatch(EmergencyMinigame __instance)
         {
+            if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
             __instance.StatusText.text = GetString(StringKey.MeetingDisabled);
             __instance.NumberText.text = "";
             __instance.OpenLid.gameObject.SetActive(false);
             __instance.ClosedLid.gameObject.SetActive(true);
+            __instance.ButtonActive = false;
+        }
+
+        [HarmonyPatch(typeof(ChatBubble),nameof(ChatBubble.SetText))]
+        [HarmonyPostfix]
+        public static void NameFix(ChatBubble __instance)
+        {
+            int line = __instance.NameText.text.Split("\n").Length;
+            string el = "";
+            if (line > 1)
+            {
+                for (int i = 0; i < line - 1; i++)
+                {
+                    el += "\n";
+                }
+                el += __instance.TextArea.text;
+                __instance.TextArea.text = el;
+            }
         }
     }
 }

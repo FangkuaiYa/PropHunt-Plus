@@ -109,21 +109,29 @@ public partial class PropHuntPlugin : BasePlugin
     {
         public static GameObject FindClosestConsole(GameObject origin, float radius)
         {
-            Collider2D bestCollider = null;
-            float bestDist = 9999;
-            foreach (Collider2D collider in Physics2D.OverlapCircleAll(origin.transform.position, radius))
+            try
             {
-                if (collider.GetComponent<Console>() != null)
+                Collider2D bestCollider = null;
+                float bestDist = float.MaxValue;
+                foreach (Collider2D collider in Physics2D.OverlapCircleAll(origin.transform.position, radius))
                 {
-                    float dist = Vector2.Distance(origin.transform.position, collider.transform.position);
-                    if (dist < bestDist)
+                    if (collider.GetComponent<Console>() != null)
                     {
-                        bestCollider = collider;
-                        bestDist = dist;
+                        float dist = Vector2.Distance(origin.transform.position, collider.transform.position);
+                        if (dist < bestDist)
+                        {
+                            bestCollider = collider;
+                            bestDist = dist;
+                        }
                     }
                 }
+                return bestCollider.gameObject;
             }
-            return bestCollider.gameObject;
+            catch
+            {
+                Logger.LogError("Error getting nearest console");
+                return null;
+            }
         }
     }
 }

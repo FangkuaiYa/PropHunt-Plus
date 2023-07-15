@@ -1,6 +1,6 @@
 ﻿
-![Made without reactor](./Images/madewithoutreactor.png)
-![Prop Hunt Logo](./Images/prophuntlogo.png)
+![Made without reactor](/Images/madewithoutreactor.png)
+![Prop Hunt Logo](/Images/prophuntlogo.png)
 
 ```Compatible with 2023.7.11s ```
 # Prop Hunt
