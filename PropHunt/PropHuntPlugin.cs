@@ -12,12 +12,12 @@ using UnityEngine;
 namespace PropHunt;
 
 
-[BepInPlugin("com.jiege.prophuntre", "Prop Hunt", "1.0")]
+[BepInPlugin("com.jiege.PropHuntPlus", "Prop Hunt Plus", "1.0")]
 [BepInProcess("Among Us.exe")]
 public partial class PropHuntPlugin : BasePlugin
 {
     // Backend Variables
-    public Harmony Harmony { get; } = new("com.jiege.prophuntre");
+    public Harmony Harmony { get; } = new("com.jiege.PropHuntPlus");
     public ConfigEntry<int> HidingTime { get; set; }
     public ConfigEntry<int> MaxMissedKills { get; set; }
     public ConfigEntry<bool> Infection { get; set; }

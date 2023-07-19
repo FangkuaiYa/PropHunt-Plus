@@ -43,7 +43,7 @@ namespace PropHunt
             {
                 ping.Append("#ff0000>");
             }
-            ping.Append(string.Format(GetString(StringKey.Ping), AmongUsClient.Instance.Ping)).Append("</color>\n<size=130%>Prop Hunt Reactivited</size> v1.0\n<size=65%>By ugackMiner53&Jiege");
+            ping.Append(string.Format(GetString(StringKey.Ping), AmongUsClient.Instance.Ping)).Append("</color>\n<size=130%>Prop Hunt Plus</size> v1.0\n<size=65%>By ugackMiner53&Jiege");
             __instance.text.text = ping.ToString();
         }
 
@@ -387,12 +387,12 @@ namespace PropHunt
             if (killer == target && target.Data.Role.IsImpostor)
             {
                 PropHuntPlugin.Logger.LogInfo("Imp ded");
-                DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(StringKey.SeekerDead));
+                //DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(StringKey.SeekerDead));
             }
             else
             {
                 PropHuntPlugin.Logger.LogInfo("Crew ded/infcted");
-                DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(PropHuntPlugin.infection ? StringKey.PropInfected: StringKey.PropDead));
+                //DestroyableSingleton<ChatController>.Instance.AddChat(PlayerControl.LocalPlayer, GetString(PropHuntPlugin.infection ? StringKey.PropInfected: StringKey.PropDead));
             }
         }
         
