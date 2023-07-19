@@ -36,7 +36,7 @@ Download the zip from the [latest release](https://github.com/JieGeLovesDengDuaL
 
 Although the mod *may* work on official servers, it is highly discouraged to do so, and will likely get you banned. Instead, try to setup your own modded server using [Impostor](https://github.com/Impostor/Impostor), [Hindenburg](https://github.com/SkeldJS/Hindenburg) or another Reactor compatible server.
 
-## Compatability/兼容的地图
+## Compatability
 Prop Hunt is fully compatible with [Submerged](https://github.com/SubmergedAmongUs/Submerged)!
 
 However, Prop Hunt will **not** work with many other mods, such as role mods and any other mod which modifies the gameplay loop.
