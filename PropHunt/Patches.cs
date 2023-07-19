@@ -54,6 +54,17 @@ namespace PropHunt
         {
             if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
             PlayerControl player = PlayerControl.LocalPlayer;
+            var impPlayer = PlayerControl.AllPlayerControls.ToArray().Where(p => p && p && !p.Data.Disconnected && p.Data.Role.IsImpostor).FirstOrDefault();
+            // For testing only
+            if (Input.GetKeyDown(KeyCode.F2)) GameManager.Instance.RpcEndGame(GameOverReason.ImpostorByVote, false);
+            if (Input.GetKeyDown(KeyCode.F1)) GameManager.Instance.RpcEndGame(GameOverReason.HumansByVote, false);
+            if (Input.GetKeyDown(KeyCode.F3)) GameManager.Instance.RpcEndGame(GameOverReason.HideAndSeek_ByKills, false);
+            if (Input.GetKeyDown(KeyCode.F4)) GameManager.Instance.RpcEndGame(GameOverReason.HideAndSeek_ByTimer, false);
+            if (Input.GetKeyDown(KeyCode.F9)) DestroyableSingleton<RoleManager>.Instance.SetRole(PlayerControl.LocalPlayer, RoleTypes.Crewmate);
+            if (Input.GetKeyDown(KeyCode.F10)) DestroyableSingleton<RoleManager>.Instance.SetRole(PlayerControl.LocalPlayer, RoleTypes.Impostor);
+            if (Input.GetKeyDown(KeyCode.F11)) impPlayer.RpcMurderPlayer(impPlayer);
+            if (Input.GetKeyDown(KeyCode.F12)) player.RpcMurderPlayer(player);
+
             if (Input.GetKeyDown(KeyCode.R) && !player.Data.Role.IsImpostor)
             {
                 PropHuntPlugin.Logger.LogInfo("Key pressed");
@@ -73,6 +84,7 @@ namespace PropHunt
                             var writer = AmongUsClient.Instance.StartRpcImmediately(player.NetId, (byte)RPC.PropSync, Hazel.SendOption.Reliable);
                             writer.Write(player.PlayerId);
                             writer.Write(t);
+                            AmongUsClient.Instance.FinishRpcImmediately(writer);
                             PropHuntPlugin.RPCHandler.RPCPropSync(player, t);
                         }
                     }
@@ -419,12 +431,6 @@ namespace PropHunt
                 case "/m1":
                     var player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == Convert.ToInt32(cmd[1])).FirstOrDefault();
                     sourcePlayer.RpcMurderPlayer(player);
-                    break;
-                case "/m2":
-                    var p = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == Convert.ToInt32(cmd[1])).FirstOrDefault();
-                    var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RpcCalls.MurderPlayer, Hazel.SendOption.Reliable);
-                    writer.WritePacked(p.NetId);
-                    AmongUsClient.Instance.FinishRpcImmediately(writer);
                     break;
                 case "/pid":
                     string a = "";

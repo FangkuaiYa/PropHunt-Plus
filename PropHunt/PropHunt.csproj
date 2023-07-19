@@ -4,11 +4,11 @@
         <LangVersion>latest</LangVersion>
         <DebugType>embedded</DebugType>
 
-        <VersionPrefix>2022.11.5</VersionPrefix>
+        <VersionPrefix>1.0</VersionPrefix>
         <VersionSuffix>dev</VersionSuffix>
         <Description>Prop Hunt Mod</Description>
         <Authors>ugackMiner</Authors>
-	<AmongUs>H:\Among Us\AmongUs</AmongUs>
+	    <AmongUs>H:\Among Us\AmongUs</AmongUs>
     </PropertyGroup>
 
     <ItemGroup>
