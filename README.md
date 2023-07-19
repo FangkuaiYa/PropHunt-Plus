@@ -3,13 +3,14 @@
 ![Prop Hunt Logo](/Images/prophuntlogo.png)
 
 ```Compatible with 2023.7.11s ```
-# Prop Hunt
+
+# Prop Hunt Plus
 
 A mod for [Among Us](https://store.steampowered.com/app/945360/Among_Us/) which adds a completely new gamemode, Prop Hunt!
 
 
 ## How To Play
-Prop Hunt replaces the default roles in the game with two new roles, the **Seekers** and the **Props**.
+Prop Hunt Plus replaces the default roles in the game with two new roles, the **Seekers** and the **Props**.
 
 **Props**: The goal of the props is to do all of their tasks while hiding from the Seekers by disguising as tasks. When a prop is killed, they join the Seeker team and must hunt the other props.
 
@@ -31,11 +32,11 @@ Prop Hunt replaces the default roles in the game with two new roles, the **Seeke
 | Infection Mode | Whether Props become Seekers when they are killed | True |
 
 ## Installation
-Download the zip from the [latest release](https://github.com/ugackMiner53/PropHunt/releases), and extract the contents into your Among Us game folder.
+Download the zip from the [latest release](https://github.com/JieGeLovesDengDuaLang/PropHunt-Plus/releases), and extract the contents into your Among Us game folder.
 
 Although the mod *may* work on official servers, it is highly discouraged to do so, and will likely get you banned. Instead, try to setup your own modded server using [Impostor](https://github.com/Impostor/Impostor), [Hindenburg](https://github.com/SkeldJS/Hindenburg) or another Reactor compatible server.
 
-## Compatability
+## Compatability/兼容的地图
 Prop Hunt is fully compatible with [Submerged](https://github.com/SubmergedAmongUs/Submerged)!
 
 However, Prop Hunt will **not** work with many other mods, such as role mods and any other mod which modifies the gameplay loop.
