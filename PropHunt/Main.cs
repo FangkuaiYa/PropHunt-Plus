@@ -1,34 +1,46 @@
 ﻿// Core Script of PropHuntPlugin
 // Copyright (C) 2022  ugackMiner
 global using static PropHunt.Language;
+using AmongUs.GameOptions;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
-using System.Collections;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PropHunt;
 
 
-[BepInPlugin("com.jiege.PropHuntPlus", "Prop Hunt Plus", "1.0")]
+[BepInPlugin(ModGUID, ModName, ModVersion)]
 [BepInProcess("Among Us.exe")]
-public partial class PropHuntPlugin : BasePlugin
+public partial class Main : BasePlugin
 {
+    // Mod Informations
+    public const string ModGUID = "com.jiege.PropHuntPlus";
+    public const string ModName = "Prop Hunt Plus";
+    public const string ModVersion = "1.0";
+
+    public static ulong ModNameHex => 0x5048506c7573; //"PHPlus" in Hexadecimal
+    public static ulong ModVersionHex => Convert.ToUInt64(Main.ModVersion, 16);
+    public static ulong ModInfoForHandshake => ModNameHex + ModVersionHex;
+
     // Backend Variables
-    public Harmony Harmony { get; } = new("com.jiege.PropHuntPlus");
+    public Harmony Harmony { get; } = new(ModGUID);
     public ConfigEntry<int> HidingTime { get; set; }
     public ConfigEntry<int> MaxMissedKills { get; set; }
     public ConfigEntry<bool> Infection { get; set; }
     public ConfigEntry<bool> Debug { get; set; }
+
     internal static ManualLogSource Logger;
 
     // Gameplay Variables
     public static int hidingTime
     {
         get => Instance.HidingTime.Value;
-        set 
+        set
         {
             Instance.HidingTime.Value = value;
             Instance.Config.Save();
@@ -54,8 +66,12 @@ public partial class PropHuntPlugin : BasePlugin
     }
 
     public static int missedKills = 0;
+    public static bool IsModLobby => (AmongUsClient.Instance.AmHost || PlayerVersion.ContainsKey(AmongUsClient.Instance.GetHost().Character)) && 
+        AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay && 
+        GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.Normal;
 
-    public static PropHuntPlugin Instance;
+    public static Dictionary<PlayerControl, ulong> PlayerVersion = new();
+    public static Main Instance;
 
 
     public override void Load()
@@ -68,18 +84,21 @@ public partial class PropHuntPlugin : BasePlugin
 
         Instance = this;
 
-        Harmony.PatchAll(typeof(CustomRoleSettings));
-        Harmony.PatchAll(typeof(Patches));
-        Harmony.PatchAll(typeof(RPCPatch));
-        Harmony.PatchAll(typeof(Language));
+        Harmony.PatchAll();
         Logger.LogInfo("Loaded");
     }
 
-    
 
-    public static class RPCHandler
+
+    [HarmonyPatch(typeof(ModManager), nameof(ModManager.LateUpdate))]
+    class ModStampPatch
     {
-        public static void RPCPropSync(PlayerControl player, int propIndex)
+        public static void Postfix(ModManager __instance) => __instance.ShowModStamp();
+    }
+
+    public static class RpcHandler
+    {
+        public static void RpcPropSync(PlayerControl player, int propIndex)
         {
             GameObject prop = ShipStatus.Instance.AllConsoles[propIndex].gameObject;
             Logger.LogInfo($"{player.Data.PlayerName} changed sprite to: {prop.name}");
@@ -88,12 +107,12 @@ public partial class PropHuntPlugin : BasePlugin
             player.Visible = false;
         }
 
-        public static void RPCSettingSync(PlayerControl player, int _hidingTime, int _missedKills, bool _infection)
+        public static void RpcSettingSync(PlayerControl player, int _hidingTime, int _missedKills, bool _infection)
         {
             hidingTime = _hidingTime;
             maxMissedKills = _missedKills;
             infection = _infection;
-            Logger.LogInfo("H: " + PropHuntPlugin.hidingTime + ", M: " + PropHuntPlugin.maxMissedKills + ", I: " + PropHuntPlugin.infection);
+            Logger.LogInfo("H: " + Main.hidingTime + ", M: " + Main.maxMissedKills + ", I: " + Main.infection);
             if (player == PlayerControl.LocalPlayer && (hidingTime != Instance.HidingTime.Value || maxMissedKills != Instance.MaxMissedKills.Value || infection != Instance.Infection.Value))
             {
                 Instance.HidingTime.Value = hidingTime;
@@ -102,36 +121,10 @@ public partial class PropHuntPlugin : BasePlugin
                 Instance.Config.Save();
             }
         }
-    }
 
-
-    public static class Utility
-    {
-        public static GameObject FindClosestConsole(GameObject origin, float radius)
+        public static void RpcHandshake(PlayerControl player, ulong modInfoHex)
         {
-            try
-            {
-                Collider2D bestCollider = null;
-                float bestDist = 9999;
-                foreach (Collider2D collider in Physics2D.OverlapCircleAll(origin.transform.position, radius))
-                {
-                    if (collider.GetComponent<Console>() != null)
-                    {
-                        float dist = Vector2.Distance(origin.transform.position, collider.transform.position);
-                        if (dist < bestDist)
-                        {
-                            bestCollider = collider;
-                            bestDist = dist;
-                        }
-                    }
-                }
-                return bestCollider.gameObject;
-            }
-            catch
-            {
-                Logger.LogError("Error getting nearest console");
-                return null;
-            }
+            PlayerVersion[player] = modInfoHex;
         }
     }
 }

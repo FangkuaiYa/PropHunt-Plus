@@ -2,7 +2,7 @@
 using Hazel;
 using System.Data;
 using System.Linq;
-using static PropHunt.PropHuntPlugin;
+using static PropHunt.Main;
 
 namespace PropHunt
 {
@@ -10,8 +10,10 @@ namespace PropHunt
     {
         PropSync = 200,
         SettingSync = 201,
+        Handshake,
     }
-    [HarmonyPatch(typeof(PlayerControl),nameof(PlayerControl.HandleRpc))]
+
+    [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
     class RPCPatch
     {
         public static void Postfix([HarmonyArgument(0)] byte callId,[HarmonyArgument(1)] MessageReader reader)
@@ -24,7 +26,7 @@ namespace PropHunt
                     PlayerControl player = null;
                     int idx = reader.ReadInt32();
                     player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == id).FirstOrDefault();
-                    RPCHandler.RPCPropSync(player, idx);
+                    RpcHandler.RpcPropSync(player, idx);
                     break;
                 case RPC.SettingSync:
                     byte pid = reader.ReadByte();
@@ -33,7 +35,14 @@ namespace PropHunt
                     var missedKills = reader.ReadInt32();
                     var infection = reader.ReadBoolean();
                     p = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == pid).FirstOrDefault();
-                    RPCHandler.RPCSettingSync(p, hidingTime, missedKills, infection);
+                    RpcHandler.RpcSettingSync(p, hidingTime, missedKills, infection);
+                    break;
+                case RPC.Handshake:
+                    byte playerId = reader.ReadByte();
+                    ulong modInfo = reader.ReadUInt64();
+                    PlayerControl sender;
+                    sender = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == playerId).FirstOrDefault();
+                    RpcHandler.RpcHandshake(sender, modInfo);
                     break;
             }
         }

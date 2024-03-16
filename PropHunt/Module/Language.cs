@@ -22,16 +22,20 @@ namespace PropHunt
         PropDead,
         PropInfected,
         MeetingDisabled,
+        HandshakeNoMod,
+        HandshakeOVMod,
     }
     public static class Language
     {
         public static Dictionary<StringKey, string> langDic = new();
+
         [HarmonyPatch(typeof(TranslationController),nameof(TranslationController.Initialize))]
         [HarmonyPostfix]
         public static void Init(TranslationController __instance)
         {
             langDic = GetLang(__instance.currentLanguage.languageID);
         }
+
         [HarmonyPatch(typeof(TranslationController), nameof(TranslationController.SetLanguage))]
         [HarmonyPostfix]
         public static void SetLangPatch([HarmonyArgument(0)] TranslatedImageSet lang)
@@ -48,7 +52,7 @@ namespace PropHunt
             }
             catch
             {
-                result = "<ERR_GET_TRSLATION>" + key.ToString();
+                result = "<ERR_GET_TRSLATION:" + key.ToString() +">";
             }
             return result;
         }
@@ -78,6 +82,8 @@ namespace PropHunt
                         [StringKey.PropDead]= "Prop {0} was dead!\n{1} Seeker(s) remaining, {2} Prop(s) remaining.",
                         [StringKey.PropInfected] = "Prop {0} was infected into seeker!\n{1} Seeker(s) remaining, {2} Prop(s) remaining.",
                         [StringKey.MeetingDisabled] = "Meeting was disabled when playing Prop Hunt mode",
+                        [StringKey.HandshakeNoMod] = "Player {0} has a different mod or no mod.",
+                        [StringKey.HandshakeOVMod] = "Player {0} has a different version Prop Hunt Plus",
                     };
                 case SupportedLangs.SChinese:
                     return new()
@@ -99,9 +105,9 @@ namespace PropHunt
                         [StringKey.PropDead] = "道具 {0} 已死亡！\n剩余 {1} 位寻找者， 剩余 {2} 个道具。",
                         [StringKey.PropInfected] = "道具 {0} 已被感染为寻找者！\n剩余 {1} 位寻找者， 剩余 {2} 个道具。",
                         [StringKey.MeetingDisabled] = "在道具躲猫猫模式下，您无法开启会议",
+                        [StringKey.HandshakeNoMod] = "玩家 {0} 未安装模组或安装了其它模组",
+                        [StringKey.HandshakeOVMod] = "玩家 {0} 安装了其它版本的 Prop Hunt Plus",
                     };
-
-
             }
         }
     }

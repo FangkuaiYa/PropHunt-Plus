@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace PropHunt
 {
+    [HarmonyPatch]
     class CustomRoleSettings
     {
         static GameObject textObject;
@@ -12,8 +13,6 @@ namespace PropHunt
         public static NumberOption hidingOption;
         public static NumberOption maxMissOption;
         public static ToggleOption infectionOption;
-
-
 
         [HarmonyPatch(typeof(RolesSettingsMenu), nameof(RolesSettingsMenu.Start))]
         [HarmonyPostfix]
@@ -46,7 +45,7 @@ namespace PropHunt
             hidingOption.Increment = 5;
             hidingOption.ValidRange = new FloatRange(5, 120);
             hidingOption.SuffixType = NumberSuffixes.Seconds;
-            hidingOption.Value = PropHuntPlugin.hidingTime;
+            hidingOption.Value = Main.hidingTime;
             hidingOption.transform.position = new Vector3(hidingOption.transform.position.x, hidingOption.transform.position.y - 0.5f, hidingOption.transform.position.z);
             hidingOption.TitleText.text = GetString(StringKey.HidingTime);
             // Max Miss Option
@@ -56,7 +55,7 @@ namespace PropHunt
             maxMissOption.Increment = 1;
             maxMissOption.ValidRange = new FloatRange(1, 35);
             maxMissOption.SuffixType = NumberSuffixes.None;
-            maxMissOption.Value = PropHuntPlugin.maxMissedKills;
+            maxMissOption.Value = Main.maxMissedKills;
             maxMissOption.transform.position = new Vector3(maxMissOption.transform.position.x, maxMissOption.transform.position.y, maxMissOption.transform.position.z);
             maxMissOption.TitleText.text = GetString(StringKey.MaxMisKill);
             // Infection Option
@@ -64,7 +63,7 @@ namespace PropHunt
             infectionOption.gameObject.SetActive(true);
             infectionOption.Title = StringNames.NoneLabel;
             infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y - 0.25f, infectionOption.transform.position.z);
-            if ((PropHuntPlugin.infection && !infectionOption.GetBool()) || (!PropHuntPlugin.infection && infectionOption.GetBool()))
+            if ((Main.infection && !infectionOption.GetBool()) || (!Main.infection && infectionOption.GetBool()))
                 infectionOption.Toggle();
             infectionOption.TitleText.text = GetString(StringKey.Infection);
         }
@@ -72,7 +71,7 @@ namespace PropHunt
 
         public static void SyncCustomSettings()
         {
-            if (hidingOption && maxMissOption && infectionOption)
+            if (hidingOption && maxMissOption && infectionOption && AmongUsClient.Instance.AmHost)
             {
                 var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RPC.SettingSync, Hazel.SendOption.Reliable);
                 writer.Write(PlayerControl.LocalPlayer.PlayerId);
@@ -80,15 +79,17 @@ namespace PropHunt
                 writer.Write(maxMissOption.GetInt());
                 writer.Write(infectionOption.GetBool());
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
-                PropHuntPlugin.RPCHandler.RPCSettingSync(PlayerControl.LocalPlayer, hidingOption.GetInt(), maxMissOption.GetInt(), infectionOption.GetBool());
+                Main.RpcHandler.RpcSettingSync(PlayerControl.LocalPlayer, hidingOption.GetInt(), maxMissOption.GetInt(), infectionOption.GetBool());
             }
         }
+
         [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
         [HarmonyPostfix]
         public static void HudStringPatch(ref string __result)
         {
-            __result += $"\n{GetString(StringKey.HidingTime)}: {PropHuntPlugin.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {PropHuntPlugin.maxMissedKills}\n{GetString(StringKey.Infection)}: {(PropHuntPlugin.infection ? "On" : "Off")}";
+            __result += $"\n{GetString(StringKey.HidingTime)}: {Main.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {Main.maxMissedKills}\n{GetString(StringKey.Infection)}: {(Main.infection ? "On" : "Off")}";
         }
+
         [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnGameJoined))]
         [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.RpcSyncSettings))]
         [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
