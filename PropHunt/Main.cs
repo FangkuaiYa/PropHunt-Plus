@@ -66,9 +66,9 @@ public partial class Main : BasePlugin
     }
 
     public static int missedKills = 0;
-    public static bool IsModLobby => (AmongUsClient.Instance.AmHost || PlayerVersion.ContainsKey(AmongUsClient.Instance.GetHost().Character)) && 
-        AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay && 
-        GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.Normal;
+    public static bool IsModLobby => true;//(AmongUsClient.Instance.AmHost || PlayerVersion.ContainsKey(AmongUsClient.Instance.GetHost().Character)) && 
+    //    AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay && 
+    //    GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.Normal;
 
     public static Dictionary<PlayerControl, ulong> PlayerVersion = new();
     public static Main Instance;
