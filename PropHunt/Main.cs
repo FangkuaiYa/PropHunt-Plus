@@ -7,6 +7,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
+using PropHunt.Module;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -85,6 +86,7 @@ public partial class Main : BasePlugin
         Instance = this;
 
         Harmony.PatchAll();
+        SubmergedCompatibility.Start();
         Logger.LogInfo("Loaded");
     }
 
