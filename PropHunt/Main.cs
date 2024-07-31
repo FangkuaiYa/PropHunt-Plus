@@ -1,7 +1,7 @@
 ﻿// Core Script of PropHuntPlugin
 // Copyright (C) 2022  ugackMiner
 global using static PropHunt.Language;
-using AmongUs.GameOptions;
+global using Object = UnityEngine.Object;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -10,7 +10,10 @@ using HarmonyLib;
 using PropHunt.Module;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 namespace PropHunt;
 
@@ -19,88 +22,65 @@ namespace PropHunt;
 [BepInProcess("Among Us.exe")]
 public partial class Main : BasePlugin
 {
-    // Mod Informations
-    public const string ModGUID = "com.jiege.PropHuntPlus";
+    // Mod Information
+    public const string ModGUID = "com.modlaboratory.prophuntplus";
     public const string ModName = "Prop Hunt Plus";
     public const string ModVersion = "1.0";
 
     public static ulong ModNameHex => 0x5048506c7573; //"PHPlus" in Hexadecimal
-    public static ulong ModVersionHex => Convert.ToUInt64(Main.ModVersion, 16);
+    public static ulong ModVersionHex => Convert.ToUInt64(ModVersion, 16);
     public static ulong ModInfoForHandshake => ModNameHex + ModVersionHex;
 
     // Backend Variables
     public Harmony Harmony { get; } = new(ModGUID);
-    public ConfigEntry<int> HidingTime { get; set; }
-    public ConfigEntry<int> MaxMissedKills { get; set; }
-    public ConfigEntry<bool> Infection { get; set; }
+    public ConfigEntry<int> HidingTimeConfig { get; set; }
+    public ConfigEntry<int> MaxMiskillConfig { get; set; }
+    public ConfigEntry<bool> InfectionConfig { get; set; }
     public ConfigEntry<bool> Debug { get; set; }
 
     internal static ManualLogSource Logger;
 
     // Gameplay Variables
-    public static int hidingTime
-    {
-        get => Instance.HidingTime.Value;
-        set
-        {
-            Instance.HidingTime.Value = value;
-            Instance.Config.Save();
-        }
-    }
-    public static int maxMissedKills
-    {
-        get => Instance.MaxMissedKills.Value;
-        set
-        {
-            Instance.MaxMissedKills.Value = value;
-            Instance.Config.Save();
-        }
-    }
-    public static bool infection
-    {
-        get => Instance.Infection.Value;
-        set
-        {
-            Instance.Infection.Value = value;
-            Instance.Config.Save();
-        }
-    }
-
-    public static int missedKills = 0;
+    
     public static bool IsModLobby => true;//(AmongUsClient.Instance.AmHost || PlayerVersion.ContainsKey(AmongUsClient.Instance.GetHost().Character)) && 
     //    AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay && 
     //    GameOptionsManager.Instance.currentGameOptions.GameMode == GameModes.Normal;
 
     public static Dictionary<PlayerControl, ulong> PlayerVersion = new();
-    public static Main Instance;
+    public static Main Instance { get; private set; }
 
 
     public override void Load()
     {
-        Logger = base.Log;
-        HidingTime = Config.Bind("Prop Hunt", "Hiding Time", 30);
-        MaxMissedKills = Config.Bind("Prop Hunt", "Max Misses", 3);
-        Infection = Config.Bind("Prop Hunt", "Infection", true);
+        Logger = Log;
+        HidingTimeConfig = Config.Bind("Prop Hunt", "Hiding Time", 30);
+        MaxMiskillConfig = Config.Bind("Prop Hunt", "Max Misses", 3);
+        InfectionConfig = Config.Bind("Prop Hunt", "Infection", true);
         Debug = Config.Bind("Prop Hunt", "Debug", false);
 
         Instance = this;
 
-        Harmony.PatchAll();
         SubmergedCompatibility.Start();
-        Logger.LogInfo("Loaded");
+        if (SubmergedCompatibility.Loaded)
+            Harmony.PatchAll();
+        else
+            foreach (var type in typeof(Main).Assembly.GetTypes().Where(t => !t.Equals(typeof(PlayerPatch.SubmergedHidingTimerFix))))
+                Harmony.PatchAll(type);
+
+        Logger.LogInfo("Loaded successfully!");
     }
 
 
 
     [HarmonyPatch(typeof(ModManager), nameof(ModManager.LateUpdate))]
-    class ModStampPatch
+    static class ModStampPatch
     {
         public static void Postfix(ModManager __instance) => __instance.ShowModStamp();
     }
 
     public static class RpcHandler
     {
-        public static void RpcPropSync(PlayerControl player, int propIndex)
+        public static void PropSync(PlayerControl player, int propIndex)
         {
             GameObject prop = ShipStatus.Instance.AllConsoles[propIndex].gameObject;
             Logger.LogInfo($"{player.Data.PlayerName} changed sprite to: {prop.name}");
@@ -109,22 +89,30 @@ public partial class Main : BasePlugin
             player.Visible = false;
         }
 
-        public static void RpcSettingSync(PlayerControl player, int _hidingTime, int _missedKills, bool _infection)
+        public static void SettingSync(int hidingTime, int missedKills, bool infection)
         {
-            hidingTime = _hidingTime;
-            maxMissedKills = _missedKills;
-            infection = _infection;
-            Logger.LogInfo("H: " + Main.hidingTime + ", M: " + Main.maxMissedKills + ", I: " + Main.infection);
-            if (player == PlayerControl.LocalPlayer && (hidingTime != Instance.HidingTime.Value || maxMissedKills != Instance.MaxMissedKills.Value || infection != Instance.Infection.Value))
-            {
-                Instance.HidingTime.Value = hidingTime;
-                Instance.MaxMissedKills.Value = maxMissedKills;
-                Instance.Infection.Value = infection;
-                Instance.Config.Save();
-            }
+            ModData.HidingTime = hidingTime;
+            ModData.MaxMiskill = missedKills;
+            ModData.Infection = infection;
+            Logger.LogInfo($"Current: {ModData.HidingTime} {ModData.MaxMiskill} {ModData.Infection}");
+
+            var format = "<font=\"Barlow-Black SDF\" material=\"Barlow-Black Outline\">{0}</font>";
+            var item = TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
+                $"{string.Format(format, GetString(StringKey.HidingTime))}",
+                $"{ModData.HidingTime}"
+            ) + "\n"
+            + TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
+                $"{string.Format(format, GetString(StringKey.MaxMiskill))}",
+                $"{ModData.MaxMiskill}"
+            ) + "\n"
+            + TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
+                $"{string.Format(format, GetString(StringKey.Infection))}",
+                $"{TranslationController.Instance.GetString(ModData.Infection ? StringNames.SettingsOn : StringNames.SettingsOff)}");
+
+            HudManager.Instance.Notifier.SettingsChangeMessageLogic((StringNames)int.MaxValue, item, true);
         }
 
-        public static void RpcHandshake(PlayerControl player, ulong modInfoHex)
+        public static void Handshake(PlayerControl player, ulong modInfoHex)
         {
             PlayerVersion[player] = modInfoHex;
         }

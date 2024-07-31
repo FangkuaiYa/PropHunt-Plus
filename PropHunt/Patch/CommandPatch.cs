@@ -1,5 +1,6 @@
 ﻿using AmongUs.GameOptions;
 using HarmonyLib;
+using PropHunt.Module;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,6 +62,12 @@ namespace PropHunt.Patch
                     else
                         DestroyableSingleton<RoleManager>.Instance.SetRole(PlayerControl.LocalPlayer, RoleTypes.Impostor);
                     break;
+                case "/submerged":
+                    Main.Logger.LogInfo(ShipStatus.Instance?.IsSubmerged());
+                    break;
+                case "/cc":
+                    HudManager.Instance.ShowCustomTaskComplete(cmd[1]);
+                    break;
             }
         }
 
@@ -85,10 +92,10 @@ namespace PropHunt.Patch
         {
             if (chatText.StartsWith("[SYSMSG]"))
             {
-                chatText.Replace("[SYSMSG]", "");
-                __instance.SetName("SYSTEM", false, false, Color.green);
+                chatText = chatText.Replace("[SYSMSG]", "");
+                __instance.SetName(GetString(StringKey.SystemMessage), false, false, Color.green);
                 __instance.SetLeft();
-                __instance.SetCosmetics(new(0));
+                __instance.SetCosmetics(AmongUsClient.Instance.GetHost().Character.Data);
             }
         }
     }

@@ -1,24 +1,22 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using PropHunt.Module;
 using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
 namespace PropHunt
 {
     [HarmonyPatch]
-    class UserInterfacePatch
+    class UIPatch
     {
-        public static PingTracker GameStateShower;
+        public static PingTracker ModVersionShower { get; set; }
+        public static TextMeshPro AbilityInfoShower { get; set; }
 
         [HarmonyPatch(typeof(EmergencyMinigame), nameof(EmergencyMinigame.Update))]
         [HarmonyPostfix]
         public static void EmergencyButtonPatch(EmergencyMinigame __instance)
         {
-            if (AmongUsClient.Instance.NetworkMode == NetworkModes.FreePlay) return;
+            if (ModData.IsTutorial) return;
             if (!Main.IsModLobby) return;
             __instance.StatusText.text = GetString(StringKey.MeetingDisabled);
             __instance.NumberText.text = "";
@@ -56,37 +54,54 @@ namespace PropHunt
         //        __instance.GameStartText.transform.localPosition = __instance.StartButton.transform.localPosition + Vector3.up * 2;
         //    else
         //        __instance.GameStartText.transform.localPosition = __instance.StartButton.transform.localPosition;
-            
+
         //}
 
         [HarmonyPatch(typeof(PingTracker), nameof(PingTracker.Update))]
         [HarmonyPostfix]
         public static void PingTrackerPatch(PingTracker __instance)
         {
-            StringBuilder ping = new();
-            ping.Append("\n<color=");
+            StringBuilder pingText = new();
+            pingText.Append("\n<color=");
             if (AmongUsClient.Instance.Ping < 100)
             {
-                ping.Append("#00ff00>");
+                pingText.Append("#00ff00>");
             }
             else if (AmongUsClient.Instance.Ping < 300)
             {
-                ping.Append("#ffff00>");
+                pingText.Append("#ffff00>");
             }
             else if (AmongUsClient.Instance.Ping > 300)
             {
-                ping.Append("#ff0000>");
+                pingText.Append("#ff0000>");
             }
-            ping.Append(string.Format(GetString(StringKey.Ping), AmongUsClient.Instance.Ping)).Append("</color>\n<size=130%>Prop Hunt Plus</size> v1.0\n<size=65%>By ugackMiner53&Jiege");
-            __instance.text.text = ping.ToString();
+            pingText.Append(string.Format(GetString(StringKey.Ping), AmongUsClient.Instance.Ping)).Append("</color>");
+            __instance.text.alignment = TextAlignmentOptions.Center;
+            __instance.text.text = pingText.ToString();
         }
 
         [HarmonyPatch(typeof(GameManager), nameof(GameManager.StartGame))]
         [HarmonyPostfix]
-        public static void ShowGameInfoShower()
+        public static void SetUpInfoShower()
         {
-            var shower = GameObject.FindObjectOfType<PingTracker>();
-            GameStateShower = GameObject.Instantiate(shower, shower.transform.parent);
+            if (ModData.IsTutorial) return;
+
+            // Version Info Shower
+            var pingPrefab = Object.FindObjectOfType<PingTracker>();
+            ModVersionShower = Object.Instantiate(pingPrefab, HudManager.Instance.transform);
+            ModVersionShower.transform.localPosition = new(1.35f, 2.8f, 0);
+            ModVersionShower.DestroyComponent<AspectPosition>();
+            ModVersionShower.DestroyComponent<PingTracker>();
+
+            var tmp = ModVersionShower.GetComponent<TextMeshPro>();
+            tmp.text = "<size=130%>Prop Hunt Plus</size> v1.0.1\n<size=65%>By ugackMiner53\nReactived by JieGeLovesDengDuaLang</size>";
+            tmp.alignment = TextAlignmentOptions.TopRight;
+
+            // Ability Info Shower
+            var abilityPrefab = HudManager.Instance.AbilityButton.buttonLabelText;
+            AbilityInfoShower = Object.Instantiate(abilityPrefab, HudManager.Instance.transform);
+            AbilityInfoShower.transform.localPosition = new(0, -1.5f, 0);
+            AbilityInfoShower.text = "";
         }
 
         // Reset variables on game start
@@ -94,21 +109,18 @@ namespace PropHunt
         [HarmonyPostfix]
         public static void IntroCuscenePatch()
         {
-            Main.missedKills = 0;
+            ModData.CurrentMiskills = 0;
+
             if (PlayerControl.LocalPlayer.Data.Role.IsImpostor)
-            {
                 foreach (SpriteRenderer rend in PlayerControl.LocalPlayer.GetComponentsInChildren<SpriteRenderer>())
-                {
                     rend.sortingOrder += 5;
-                }
-            }
+                
             HudManager hud = DestroyableSingleton<HudManager>.Instance;
             hud.ImpostorVentButton.gameObject.SetActiveRecursively(false);
             hud.SabotageButton.gameObject.SetActiveRecursively(false);
             hud.ReportButton.gameObject.SetActiveRecursively(false);
             hud.Chat.SetVisible(true);
-            PlayerPatch.NameState = "";
-            Main.Logger.LogInfo(Main.hidingTime + " -- " + Main.maxMissedKills);
+            Main.Logger.LogInfo(ModData.HidingTime + " -- " + ModData.MaxMiskill);
         }
     }
 }

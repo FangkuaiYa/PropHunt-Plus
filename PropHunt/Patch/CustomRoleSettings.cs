@@ -1,4 +1,12 @@
-﻿using HarmonyLib;
+﻿using AmongUs.GameOptions;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
+using HarmonyLib;
+using PropHunt.Module;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 
 namespace PropHunt
@@ -6,96 +14,190 @@ namespace PropHunt
     [HarmonyPatch]
     class CustomRoleSettings
     {
-        static GameObject textObject;
-        static GameObject toggleOption;
-        static GameObject numberOption;
+        public static NumberOption HidingTimeOption { get; set; }
+        public static NumberOption MaxMiskillOption { get; set; }
+        public static ToggleOption InfectionModeOption { get; set; }
 
-        public static NumberOption hidingOption;
-        public static NumberOption maxMissOption;
-        public static ToggleOption infectionOption;
+        public static FloatGameSetting HidingSetting => new()
+        {
+            ValidRange = new(5, 120),
+            Increment = 5,
+            FormatString = "",
+            ZeroIsInfinity = false,
+            SuffixType = NumberSuffixes.Seconds,
+            Type = OptionTypes.Float,
+            Value = ModData.HidingTime,
+            OptionName = (FloatOptionNames)100000,
+            Title = (StringNames)HidingOptionId
+        };
+        public static FloatGameSetting MaxMissSetting => new()
+        {
+            ValidRange = new(1, 35),
+            Increment = 1,
+            FormatString = "",
+            ZeroIsInfinity = false,
+            SuffixType = NumberSuffixes.None,
+            Type = OptionTypes.Int,
+            Value = ModData.MaxMiskill,
+            OptionName = (FloatOptionNames)100000,
+            Title = (StringNames)MaxMissOptionId
+        };
+        public static CheckboxGameSetting InfectionModeSetting => new()
+        {
+            Type = OptionTypes.Checkbox,
+            OptionName = (BoolOptionNames)100000,
+            Title = (StringNames)InfectionModeOptionId
+        };
+        public static List<BaseGameSetting> Settings => new()
+        {
+            HidingSetting,
+            MaxMissSetting,
+            InfectionModeSetting
+        };
+
+        public const int HidingOptionId = 9999;
+        public const int MaxMissOptionId = 10000;
+        public const int InfectionModeOptionId = 10001;
 
         [HarmonyPatch(typeof(RolesSettingsMenu), nameof(RolesSettingsMenu.Start))]
         [HarmonyPostfix]
         public static void PropOptionsMenuPatch(RolesSettingsMenu __instance)
         {
-            // First time setup
-            if (toggleOption == null && numberOption == null)
+            var headers = __instance.transform.FindChild("HeaderButtons");
+            for (int i = 0; i < headers.childCount; i++)
             {
-                textObject = GameObject.Instantiate(GameObject.Find("Role Name").gameObject);
-                textObject.GetComponent<TMPro.TextMeshPro>().text = GetString(StringKey.PropHunt);
-                textObject.GetComponent<TMPro.TextMeshPro>().color = Palette.Black;
-                toggleOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<ToggleOption>().gameObject);
-                numberOption = GameObject.Instantiate(__instance.AdvancedRolesSettings.GetComponentInChildren<NumberOption>().gameObject);
-                textObject.SetActive(false);
-                toggleOption.SetActive(false);
-                numberOption.SetActive(false);
+                var current = headers.GetChild(i);
+                if (current.name.StartsWith("RoleSettingsTabButton")) current.gameObject.SetActive(false);
             }
-            // Remove the other role settings
-            __instance.RoleChancesSettings.SetActive(false);
-            __instance.AdvancedRolesSettings.SetActiveRecursively(false);
-            __instance.AdvancedRolesSettings.SetActive(true);
-            // Prop Hunt text
-            GameObject textInstance = GameObject.Instantiate(textObject, __instance.AdvancedRolesSettings.transform);
-            textInstance.transform.position = new Vector3(textInstance.transform.position.x - 2, textInstance.transform.position.y + 0.5f, textInstance.transform.position.z);
-            textInstance.SetActive(true);
-            // Hiding Option
-            hidingOption = GameObject.Instantiate(numberOption, __instance.AdvancedRolesSettings.transform).GetComponent<NumberOption>();
-            hidingOption.gameObject.SetActive(true);
-            hidingOption.Title = StringNames.NoneLabel;
-            hidingOption.Increment = 5;
-            hidingOption.ValidRange = new FloatRange(5, 120);
-            hidingOption.SuffixType = NumberSuffixes.Seconds;
-            hidingOption.Value = Main.hidingTime;
-            hidingOption.transform.position = new Vector3(hidingOption.transform.position.x, hidingOption.transform.position.y - 0.5f, hidingOption.transform.position.z);
-            hidingOption.TitleText.text = GetString(StringKey.HidingTime);
-            // Max Miss Option
-            maxMissOption = GameObject.Instantiate(numberOption, __instance.AdvancedRolesSettings.transform).GetComponent<NumberOption>();
-            maxMissOption.gameObject.SetActive(true);
-            maxMissOption.Title = StringNames.NoneLabel;
-            maxMissOption.Increment = 1;
-            maxMissOption.ValidRange = new FloatRange(1, 35);
-            maxMissOption.SuffixType = NumberSuffixes.None;
-            maxMissOption.Value = Main.maxMissedKills;
-            maxMissOption.transform.position = new Vector3(maxMissOption.transform.position.x, maxMissOption.transform.position.y, maxMissOption.transform.position.z);
-            maxMissOption.TitleText.text = GetString(StringKey.MaxMisKill);
-            // Infection Option
-            infectionOption = GameObject.Instantiate(toggleOption, __instance.AdvancedRolesSettings.transform).GetComponent<ToggleOption>();
-            infectionOption.gameObject.SetActive(true);
-            infectionOption.Title = StringNames.NoneLabel;
-            infectionOption.transform.position = new Vector3(infectionOption.transform.position.x, infectionOption.transform.position.y - 0.25f, infectionOption.transform.position.z);
-            if ((Main.infection && !infectionOption.GetBool()) || (!Main.infection && infectionOption.GetBool()))
-                infectionOption.Toggle();
-            infectionOption.TitleText.text = GetString(StringKey.Infection);
+
+            Object.FindObjectOfType<GameSettingMenu>().RoleSettingsButton.SelectButton(true);
+            OpenModMenu(__instance);
+
+            void InitNumberOptionDelayed(NumberOption option, StringKey id, float value)
+            {
+                option.StartCoroutine(Coroutine().WrapToIl2Cpp());
+                IEnumerator Coroutine()
+                {
+                    yield return new WaitForSeconds(0.1f);
+                    option.oldValue = option.Value = value;
+                    option.TitleText.text = GetString(id);
+                    option.ValueText.text = option.Data.GetValueString(value);
+                }
+            }
+
+            void InitToggleOptionDelayed(ToggleOption option, StringKey id, bool value)
+            {
+                option.StartCoroutine(Coroutine().WrapToIl2Cpp());
+                IEnumerator Coroutine()
+                {
+                    yield return new WaitForSeconds(0.1f);
+                    option.CheckMark.enabled = option.oldValue = value;
+                    option.TitleText.text = GetString(id);
+                }
+            }
+
+            var options = __instance.advancedSettingChildren;
+            foreach (var option in options)
+            {
+                switch ((int)option.Data.Title)
+                {
+                    case HidingOptionId:
+                        {
+                            HidingTimeOption = option.Cast<NumberOption>();
+                            HidingTimeOption.ValidRange = HidingSetting.ValidRange;
+                            HidingTimeOption.Increment = HidingSetting.Increment;
+                            InitNumberOptionDelayed(HidingTimeOption, StringKey.HidingTime, ModData.HidingTime);
+                        }
+                        break;
+                    case MaxMissOptionId:
+                        {
+                            MaxMiskillOption = option.Cast<NumberOption>();
+                            MaxMiskillOption.ValidRange = HidingSetting.ValidRange;
+                            MaxMiskillOption.Increment = HidingSetting.Increment;
+                            InitNumberOptionDelayed(MaxMiskillOption, StringKey.MaxMiskill, ModData.MaxMiskill);
+                        }
+                        break;
+                    case InfectionModeOptionId:
+                        {
+                            InfectionModeOption = option.Cast<ToggleOption>();
+                            InitToggleOptionDelayed(InfectionModeOption, StringKey.Infection, ModData.Infection);
+                        }
+                        break;
+                }
+
+                option.OnValueChanged = new Action<OptionBehaviour>((o) =>
+                {
+                    switch ((int)o.Data.Title)
+                    {
+                        case HidingOptionId:
+                            ModData.HidingTime = o.GetInt();
+                            break;
+                        case MaxMissOptionId:
+                            ModData.MaxMiskill = o.GetInt();
+                            break;
+                        case InfectionModeOptionId:
+                            ModData.Infection = o.GetBool();
+                            break;
+                    }
+
+                    SyncCustomSettings();
+                });
+
+                var oldPos = option.transform.localPosition;
+                option.transform.localPosition = new Vector3(0, oldPos.y, oldPos.z) + Vector3.up;
+            }
         }
 
+        public static void OpenModMenu(RolesSettingsMenu __instance)
+        {
+            __instance.ChangeTab(new()
+            {
+                Role = RoleManager.Instance.AllRoles.FirstOrDefault(r => r.Role == RoleTypes.Crewmate),
+                AllGameSettings = Settings.ToIl2CppList()
+            }, __instance.AllButton);
+        }
+
+        [HarmonyPatch(typeof(RolesSettingsMenu), nameof(RolesSettingsMenu.ChangeTab))]
+        [HarmonyPostfix]
+        public static void OnChangeTab(RolesSettingsMenu __instance)
+        {
+            __instance.AllButton.SelectButton(true);
+            __instance.AllButton.Destroy();
+
+            var advancedTab = __instance.transform.FindChild("Scroller").FindChild("SliderInner").FindChild("AdvancedTab");
+            advancedTab.FindChild("InfoLabelBackground").gameObject.Destroy();
+            advancedTab.FindChild("DescBackground").gameObject.Destroy();
+            advancedTab.FindChild("Imagebackground").gameObject.Destroy();
+            __instance.roleScreenshot.gameObject.Destroy();
+            __instance.roleTitleText.text = GetString(StringKey.PropHunt);
+        }
+
+        [HarmonyPatch(typeof(RolesSettingsMenu), nameof(RolesSettingsMenu.OpenMenu))]
+        [HarmonyPostfix]
+        public static void OnOpenMenu(RolesSettingsMenu __instance)
+        {
+            if (!__instance.AdvancedRolesSettings.active) OpenModMenu(__instance);
+        }
 
         public static void SyncCustomSettings()
         {
-            if (hidingOption && maxMissOption && infectionOption && AmongUsClient.Instance.AmHost)
+            if (AmongUsClient.Instance.AmHost && PlayerControl.LocalPlayer)
             {
-                var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)RPC.SettingSync, Hazel.SendOption.Reliable);
-                writer.Write(PlayerControl.LocalPlayer.PlayerId);
-                writer.Write(hidingOption.GetInt());
-                writer.Write(maxMissOption.GetInt());
-                writer.Write(infectionOption.GetBool());
+                var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)CustomRpc.SettingSync, Hazel.SendOption.Reliable);
+                writer.Write(ModData.HidingTime);
+                writer.Write(ModData.MaxMiskill);
+                writer.Write(ModData.Infection);
                 AmongUsClient.Instance.FinishRpcImmediately(writer);
-                Main.RpcHandler.RpcSettingSync(PlayerControl.LocalPlayer, hidingOption.GetInt(), maxMissOption.GetInt(), infectionOption.GetBool());
+                Main.RpcHandler.SettingSync(ModData.HidingTime, ModData.MaxMiskill, ModData.Infection);
             }
         }
 
-        [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
-        [HarmonyPostfix]
-        public static void HudStringPatch(ref string __result)
-        {
-            __result += $"\n{GetString(StringKey.HidingTime)}: {Main.hidingTime}s\n{GetString(StringKey.MaxMisKill)}: {Main.maxMissedKills}\n{GetString(StringKey.Infection)}: {(Main.infection ? "On" : "Off")}";
-        }
-
-        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnGameJoined))]
+        [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.Awake))]
         [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.RpcSyncSettings))]
-        [HarmonyPatch(typeof(IGameOptionsExtensions), nameof(IGameOptionsExtensions.ToHudString))]
         [HarmonyPostfix]
-        public static void SyncSettingsPatch()
+        public static void SyncSettingsPatch(PlayerControl __instance)
         {
+            if (!GameManager.Instance) return; // Stop synchronizing when player prefab is loaded
             SyncCustomSettings();
         }
     }

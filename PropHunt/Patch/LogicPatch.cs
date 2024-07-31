@@ -1,5 +1,6 @@
 ﻿using AmongUs.GameOptions;
 using HarmonyLib;
+using PropHunt.Module;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,25 +18,25 @@ namespace PropHunt.Patch
         [HarmonyPrefix]
         public static void KillButtonClickPatch(KillButton __instance)
         {
-            if (__instance.currentTarget == null && !__instance.isCoolingDown && !PlayerControl.LocalPlayer.Data.IsDead && !PlayerControl.LocalPlayer.inVent)
-            {
-                Main.missedKills++;
-                if (AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay)
-                {
-                    PlayerPatch.NameState = "\n" + string.Format($"<color=#ff0000>{GetString(StringKey.RemainAttempt)}</color>", Main.maxMissedKills - Main.missedKills);
-                }
-                if (Main.missedKills >= Main.maxMissedKills)
-                {
-                    PlayerControl.LocalPlayer.RpcMurderPlayer(PlayerControl.LocalPlayer, true);
-                    PlayerPatch.NameState = "";
-                    Main.missedKills = 0;
-                }
-                GameObject closestProp = Utils.FindClosestConsole(PlayerControl.LocalPlayer.gameObject, 
+            var closestProp = Utils.FindClosestConsole(PlayerControl.LocalPlayer.gameObject,
                     GameOptionsData.KillDistances[Mathf.Clamp(GameOptionsManager.Instance.currentNormalGameOptions.KillDistance, 0, 2)]);
-                if (closestProp != null)
+
+            if (ModData.IsTutorial) return;
+            if (!__instance.currentTarget && !__instance.isCoolingDown && !PlayerControl.LocalPlayer.Data.IsDead && !PlayerControl.LocalPlayer.inVent && closestProp)
+            {
+                ModData.CurrentMiskills++;
+
+                if (AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay)
+                    UIPatch.AbilityInfoShower.text = string.Format($"<color=#ff0000>{GetString(StringKey.RemainingAttempt)}</color>", ModData.MaxMiskill - ModData.CurrentMiskills);
+                
+                if (ModData.CurrentMiskills >= ModData.MaxMiskill)
                 {
-                    GameObject.Destroy(closestProp.gameObject);
+                    PlayerControl.LocalPlayer.CmdCheckMurder(PlayerControl.LocalPlayer);
+                    ModData.CurrentMiskills = 0;
                 }
+                
+                if (closestProp)
+                    Object.Destroy(closestProp.gameObject);
             }
         }
 
@@ -64,6 +65,7 @@ namespace PropHunt.Patch
         public static bool CheckEndPatch()
         {
             if (Main.Instance.Debug.Value) return false;
+            if (ModData.IsTutorial) return false;
             if (!Main.IsModLobby) return true;
 
             int crew = 0, impostors = 0, aliveImpostors = 0;
@@ -80,20 +82,7 @@ namespace PropHunt.Patch
             }
             if (crew <= 0)
             {
-                GameOverReason endReason;
-                switch (TempData.LastDeathReason)
-                {
-                    case DeathReason.Exile:
-                        endReason = GameOverReason.ImpostorByVote;
-                        break;
-                    case DeathReason.Kill:
-                        endReason = GameOverReason.ImpostorByKill;
-                        break;
-                    default:
-                        endReason = GameOverReason.ImpostorByVote;
-                        break;
-                }
-                GameManager.Instance.RpcEndGame(endReason, false);
+                GameManager.Instance.RpcEndGame(GameOverReason.ImpostorByKill, false);
                 return false;
             }
             else if (GameData.Instance.TotalTasks <= GameData.Instance.CompletedTasks)
