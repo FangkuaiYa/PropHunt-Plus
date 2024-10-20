@@ -7,13 +7,13 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
+using PropHunt.CustomOption;
 using PropHunt.Module;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using YamlDotNet.Core.Tokens;
 
 namespace PropHunt;
 
@@ -66,7 +66,8 @@ public partial class Main : BasePlugin
         else
             foreach (var type in typeof(Main).Assembly.GetTypes().Where(t => !t.Equals(typeof(PlayerPatch.SubmergedHidingTimerFix))))
                 Harmony.PatchAll(type);
-
+        CustumOptions.Load();
+        Harmony.PatchAll(typeof(Language));
         Logger.LogInfo("Loaded successfully!");
     }
 
@@ -87,29 +88,6 @@ public partial class Main : BasePlugin
             player.GetComponent<SpriteRenderer>().sprite = prop.GetComponent<SpriteRenderer>().sprite;
             player.transform.localScale = prop.transform.lossyScale;
             player.Visible = false;
-        }
-
-        public static void SettingSync(int hidingTime, int missedKills, bool infection)
-        {
-            ModData.HidingTime = hidingTime;
-            ModData.MaxMiskill = missedKills;
-            ModData.Infection = infection;
-            Logger.LogInfo($"Current: {ModData.HidingTime} {ModData.MaxMiskill} {ModData.Infection}");
-
-            var format = "<font=\"Barlow-Black SDF\" material=\"Barlow-Black Outline\">{0}</font>";
-            var item = TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
-                $"{string.Format(format, GetString(StringKey.HidingTime))}",
-                $"{ModData.HidingTime}"
-            ) + "\n"
-            + TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
-                $"{string.Format(format, GetString(StringKey.MaxMiskill))}",
-                $"{ModData.MaxMiskill}"
-            ) + "\n"
-            + TranslationController.Instance.GetString(StringNames.LobbyChangeSettingNotification,
-                $"{string.Format(format, GetString(StringKey.Infection))}",
-                $"{TranslationController.Instance.GetString(ModData.Infection ? StringNames.SettingsOn : StringNames.SettingsOff)}");
-
-            HudManager.Instance.Notifier.SettingsChangeMessageLogic((StringNames)int.MaxValue, item, true);
         }
 
         public static void Handshake(PlayerControl player, ulong modInfoHex)

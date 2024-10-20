@@ -9,7 +9,7 @@ namespace PropHunt
     [HarmonyPatch]
     class UIPatch
     {
-        public static PingTracker ModVersionShower { get; set; }
+        //public static PingTracker ModVersionShower { get; set; }
         public static TextMeshPro AbilityInfoShower { get; set; }
 
         [HarmonyPatch(typeof(EmergencyMinigame), nameof(EmergencyMinigame.Update))]
@@ -57,7 +57,7 @@ namespace PropHunt
 
         //}
 
-        [HarmonyPatch(typeof(PingTracker), nameof(PingTracker.Update))]
+        /*[HarmonyPatch(typeof(PingTracker), nameof(PingTracker.Update))]
         [HarmonyPostfix]
         public static void PingTrackerPatch(PingTracker __instance)
         {
@@ -78,24 +78,38 @@ namespace PropHunt
             pingText.Append(string.Format(GetString(StringKey.Ping), AmongUsClient.Instance.Ping)).Append("</color>");
             __instance.text.alignment = TextAlignmentOptions.Center;
             __instance.text.text = pingText.ToString();
-        }
+        }*/
 
-        [HarmonyPatch(typeof(GameManager), nameof(GameManager.StartGame))]
+		[HarmonyPriority(Priority.Low)]
+		[HarmonyPatch(typeof(PingTracker), nameof(PingTracker.Update))]
+		public static class PingTracker_Update
+		{
+			[HarmonyPostfix]
+			public static void Postfix(PingTracker __instance)
+			{
+				var position = __instance.GetComponent<AspectPosition>();
+				position.DistanceFromEdge = new Vector3(3.6f, 0.1f, 0);
+				position.AdjustPosition();
+                __instance.text.text = $"<size=130%>Prop Hunt Plus</size> v{Main.ModVersion}\n<size=65%>By ugackMiner53\nReactived by JieGeLovesDengDuaLang</size>\nPing: {AmongUsClient.Instance.Ping}ms";
+			}
+		}
+
+		[HarmonyPatch(typeof(GameManager), nameof(GameManager.StartGame))]
         [HarmonyPostfix]
         public static void SetUpInfoShower()
         {
             if (ModData.IsTutorial) return;
 
             // Version Info Shower
-            var pingPrefab = Object.FindObjectOfType<PingTracker>();
-            ModVersionShower = Object.Instantiate(pingPrefab, HudManager.Instance.transform);
-            ModVersionShower.transform.localPosition = new(1.35f, 2.8f, 0);
-            ModVersionShower.DestroyComponent<AspectPosition>();
-            ModVersionShower.DestroyComponent<PingTracker>();
+            //var pingPrefab = Object.FindObjectOfType<PingTracker>();
+            //ModVersionShower = Object.Instantiate(pingPrefab, HudManager.Instance.transform);
+            //ModVersionShower.transform.localPosition = new(1.35f, 2.8f, 0);
+            //ModVersionShower.DestroyComponent<AspectPosition>();
+            //ModVersionShower.DestroyComponent<PingTracker>();
 
-            var tmp = ModVersionShower.GetComponent<TextMeshPro>();
-            tmp.text = "<size=130%>Prop Hunt Plus</size> v1.0.1\n<size=65%>By ugackMiner53\nReactived by JieGeLovesDengDuaLang</size>";
-            tmp.alignment = TextAlignmentOptions.TopRight;
+            //var tmp = ModVersionShower.GetComponent<TextMeshPro>();
+            //tmp.text = "<size=130%>Prop Hunt Plus</size> v1.0.1\n<size=65%>By ugackMiner53\nReactived by JieGeLovesDengDuaLang</size>";
+            //tmp.alignment = TextAlignmentOptions.TopRight;
 
             // Ability Info Shower
             var abilityPrefab = HudManager.Instance.AbilityButton.buttonLabelText;

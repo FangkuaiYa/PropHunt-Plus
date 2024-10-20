@@ -9,9 +9,11 @@ namespace PropHunt
     public enum CustomRpc
     {
         PropSync = 200,
-        SettingSync = 201,
+        //SettingSync = 201,
         Handshake,
-    }
+		SettingSync,
+		SyncCustomSettings
+	}
 
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.HandleRpc))]
     class RPCPatch
@@ -27,12 +29,6 @@ namespace PropHunt
                     int idx = reader.ReadInt32();
                     player = PlayerControl.AllPlayerControls.ToArray().Where(pc => pc.PlayerId == id).FirstOrDefault();
                     RpcHandler.PropSync(player, idx);
-                    break;
-                case CustomRpc.SettingSync:
-                    var hidingTime = reader.ReadInt32();
-                    var missedKills = reader.ReadInt32();
-                    var infection = reader.ReadBoolean();
-                    RpcHandler.SettingSync(hidingTime, missedKills, infection);
                     break;
                 case CustomRpc.Handshake:
                     byte playerId = reader.ReadByte();
